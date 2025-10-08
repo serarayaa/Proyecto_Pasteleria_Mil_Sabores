@@ -1,16 +1,11 @@
 pluginManagement {
     repositories {
-        google {
-            content {
-                includeGroupByRegex("com\\.android.*")
-                includeGroupByRegex("com\\.google.*")
-                includeGroupByRegex("androidx.*")
-            }
-        }
-        mavenCentral()
-        gradlePluginPortal()
+        google()            // Necesario para plugins de Google como google-services
+        gradlePluginPortal() // Plugins de Gradle
+        mavenCentral()      // Maven central
     }
 }
+
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
@@ -19,6 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "milsabores"
+rootProject.name = "Proyecto_Pasteleria_Mil_Sabores"
 include(":app")
- 
