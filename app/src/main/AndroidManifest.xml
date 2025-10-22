@@ -1,10 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- Permiso (solo una vez) -->
-    <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- Permisos generales -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.VIBRATE" />
+
+    <!-- Permisos para notificaciones -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- NUEVOS permisos para cámara/galería -->
+    <uses-permission android:name="android.permission.CAMERA" />
+
+    <!-- Android 13+ -->
+    <uses-permission
+        android:name="android.permission.READ_MEDIA_IMAGES"
+        android:required="false" />
+
+    <!-- Android 12- -->
+    <uses-permission
+        android:name="android.permission.READ_EXTERNAL_STORAGE"
+        android:maxSdkVersion="32" />
+
+    <!-- No bloquear instalación si el dispositivo no tiene cámara -->
+    <uses-feature
+        android:name="android.hardware.camera.any"
+        android:required="false" />
 
     <application
+        android:name=".MilSaboresApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
@@ -16,10 +39,11 @@
             android:name=".MainActivity"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
 
     </application>
+
 </manifest>

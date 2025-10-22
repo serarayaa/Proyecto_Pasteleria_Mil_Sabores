@@ -19,7 +19,7 @@ val productosDemo = listOf(
         precio = "$2.500",
         imagenRes = R.drawable.bombon_chocolate,
         categoria = "Pasteles",
-        descripcion = "Clásica torta chilena con manjar artesanal y masa crujiente."
+        descripcion = "Delicioso bombón de Chocolate con exquisita cobertura."
     ),
     Producto(
         id = 2,
@@ -27,14 +27,14 @@ val productosDemo = listOf(
         precio = "$15.000",
         imagenRes = R.drawable.torta_chocolate,
         categoria = "Postres",
-        descripcion = "Suave cheesecake con base de galleta y cobertura de frutillas naturales."
+        descripcion = "Suave torta de Chocolate con ingredientes seleccionados."
     ),
     Producto(
         id = 3,
         titulo = "Pie de Limón",
-        precio = "$8.000 (6 unidades)",
+        precio = "$8.000",
         imagenRes = R.drawable.pie_limon,
         categoria = "Dulces",
-        descripcion = "Deliciosas trufas cubiertas con cacao amargo."
+        descripcion = "Sabroso Pie de Limón con ingredientes de alta calidad."
     )
 )

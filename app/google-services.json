@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "3270300883",
-    "project_id": "duocapp2025-64dc0",
-    "storage_bucket": "duocapp2025-64dc0.firebasestorage.app"
+    "project_number": "413715724245",
+    "project_id": "pasteleria-1000-sabores",
+    "storage_bucket": "pasteleria-1000-sabores.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:3270300883:android:dbd681c123c906e1c77026",
+        "mobilesdk_app_id": "1:413715724245:android:6354253901464883156f5c",
         "android_client_info": {
           "package_name": "cl.duoc.milsabores"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAHIa0Gw6afkbRpX6EHiQMiKY5n95dmpGo"
+          "current_key": "AIzaSyCMJzSK1KJWdeJt8d7wMDF0xmhtFtnSDUQ"
         }
       ],
       "services": {

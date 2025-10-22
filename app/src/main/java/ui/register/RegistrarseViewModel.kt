@@ -15,7 +15,11 @@ data class RegisterUiState(
     val confirm: String = "",
     val loading: Boolean = false,
     val error: String? = null,
-    val registered: Boolean = false
+    val registered: Boolean = false,
+    // Validaciones por campo
+    val emailError: String? = null,
+    val passError: String? = null,
+    val confirmError: String? = null
 )
 
 class RegistrarseViewModel(
@@ -25,9 +29,26 @@ class RegistrarseViewModel(
     private val _ui = MutableStateFlow(RegisterUiState())
     val ui: StateFlow<RegisterUiState> = _ui
 
-    fun onEmail(v: String)   = _ui.update { it.copy(email = v, error = null, registered = false) }
-    fun onPass(v: String)    = _ui.update { it.copy(pass = v, error = null, registered = false) }
-    fun onConfirm(v: String) = _ui.update { it.copy(confirm = v, error = null, registered = false) }
+    fun onEmail(v: String) {
+        val emailError = if (v.isNotEmpty() && !Patterns.EMAIL_ADDRESS.matcher(v).matches()) {
+            "Email inválido"
+        } else null
+        _ui.update { it.copy(email = v, emailError = emailError, error = null, registered = false) }
+    }
+
+    fun onPass(v: String) {
+        val passError = if (v.isNotEmpty() && v.length < 6) {
+            "Clave de 6+ caracteres"
+        } else null
+        _ui.update { it.copy(pass = v, passError = passError, error = null, registered = false) }
+    }
+
+    fun onConfirm(v: String) {
+        val confirmError = if (v.isNotEmpty() && v != _ui.value.pass) {
+            "Las claves no coinciden"
+        } else null
+        _ui.update { it.copy(confirm = v, confirmError = confirmError, error = null, registered = false) }
+    }
 
     fun submit() {
         val s = _ui.value
