@@ -52,6 +52,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModel
+import android.app.Application
+import androidx.compose.ui.platform.LocalContext
 import cl.duoc.milsabores.model.EstadoPedido
 import cl.duoc.milsabores.model.Pedido
 import cl.duoc.milsabores.ui.theme.CaramelGold
@@ -67,8 +71,19 @@ import java.util.Locale
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PedidosScreen(
-    vm: PedidosViewModel = viewModel()
 ) {
+    val context = LocalContext.current
+    val vmFactory = remember {
+        object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return PedidosViewModel(
+                    context.applicationContext as Application
+                ) as T
+            }
+        }
+    }
+    val vm: PedidosViewModel = viewModel(factory = vmFactory)
     val state by vm.ui.collectAsState()
 
     // Mostrar pantalla de detalle si hay un pedido seleccionado

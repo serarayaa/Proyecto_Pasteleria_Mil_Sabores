@@ -1,5 +1,10 @@
 package cl.duoc.milsabores.ui.principal
 
+import android.app.Application
+import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -22,26 +27,24 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Cake
-import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.MoreVert
-import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -57,6 +60,7 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -88,10 +92,12 @@ import cl.duoc.milsabores.data.media.MediaRepository
 import cl.duoc.milsabores.ui.principal.components.UiProductosCard
 import cl.duoc.milsabores.ui.profile.ProfileScreen
 import cl.duoc.milsabores.ui.profile.ProfileViewModel
-import cl.duoc.milsabores.ui.recordatorio.RecordatorioScreen
-import cl.duoc.milsabores.ui.recordatorio.RecordatorioViewModel
-import cl.duoc.milsabores.ui.theme.*
-import cl.duoc.milsabores.ui.vmfactory.RecordatorioVMFactory
+import cl.duoc.milsabores.ui.theme.ChocolateBrown
+import cl.duoc.milsabores.ui.theme.GradientOrange
+import cl.duoc.milsabores.ui.theme.GradientPink
+import cl.duoc.milsabores.ui.theme.PastelPeach
+import cl.duoc.milsabores.ui.theme.StrawberryRed
+import cl.duoc.milsabores.ui.theme.VanillaWhite
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -172,6 +178,10 @@ fun PrincipalScreen(
     var expanded by remember { mutableStateOf(false) }
     val tabsNav = rememberNavController()
     val context = LocalContext.current
+
+    // Calcular número de columnas basado en el ancho de la pantalla
+    // Por defecto usamos 2 columnas para teléfonos
+    val columnas = 2
 
     LaunchedEffect(state.loggedOut) {
         if (state.loggedOut) onLogout()
@@ -308,7 +318,7 @@ fun PrincipalScreen(
                         }
 
                         LazyVerticalGrid(
-                            columns = GridCells.Adaptive(minSize = 180.dp),
+                            columns = GridCells.Fixed(columnas),
                             modifier = Modifier.fillMaxSize(),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -318,7 +328,7 @@ fun PrincipalScreen(
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .aspectRatio(0.6f)
+                                        .aspectRatio(0.55f)
                                         .animateItem()
                                         .animateContentSize()
                                 ) {
@@ -327,12 +337,12 @@ fun PrincipalScreen(
                                         onAgregar = {
                                             vm.agregarAlCarrito(producto)
 
-                                            val vibrator = context.getSystemService(android.content.Context.VIBRATOR_SERVICE) as? android.os.Vibrator
-                                            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                                            val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                                                 vibrator?.vibrate(
-                                                    android.os.VibrationEffect.createOneShot(
+                                                    VibrationEffect.createOneShot(
                                                         100,
-                                                        android.os.VibrationEffect.DEFAULT_AMPLITUDE
+                                                        VibrationEffect.DEFAULT_AMPLITUDE
                                                     )
                                                 )
                                             } else {
@@ -343,7 +353,7 @@ fun PrincipalScreen(
                                             CoroutineScope(Dispatchers.Main).launch {
                                                 snackbarHostState.showSnackbar(
                                                     message = "${producto.titulo} agregado al carrito",
-                                                    duration = androidx.compose.material3.SnackbarDuration.Short
+                                                    duration = SnackbarDuration.Short
                                                 )
                                             }
                                         }
@@ -449,7 +459,7 @@ fun PrincipalScreen(
                         @Suppress("UNCHECKED_CAST")
                         override fun <T : ViewModel> create(modelClass: Class<T>): T {
                             return cl.duoc.milsabores.ui.carrito.CarritoViewModel(
-                                context.applicationContext as android.app.Application
+                                context.applicationContext as Application
                             ) as T
                         }
                     }
@@ -474,20 +484,11 @@ fun PrincipalScreen(
             }
 
             composable(BottomItem.More.route) {
-                Column(
-                    Modifier
-                        .fillMaxSize()
-                        .padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically)
-                ) {
-                    Text("Más opciones")
-                    Button(onClick = { vm.logout() }) {
-                        Icon(Icons.Outlined.Close, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text(if (state.loading) "Cerrando..." else "Cerrar sesión")
+                cl.duoc.milsabores.ui.settings.SettingsScreen(
+                    onModoOscuroChanged = { darkMode ->
+                        // TODO: Guardar en SharedPreferences
                     }
-                }
+                )
             }
 
             composable("profile") {

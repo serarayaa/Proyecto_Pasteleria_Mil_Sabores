@@ -27,10 +27,19 @@ class PedidosRepository(
      */
     suspend fun crearPedido(pedido: Pedido): Result<String> {
         return try {
+            Log.d(TAG, "Iniciando creación de pedido...")
+
             val uid = auth.currentUser?.uid
-                ?: return Result.failure(Exception("Usuario no autenticado"))
+            Log.d(TAG, "UID del usuario: $uid")
+
+            if (uid == null) {
+                Log.e(TAG, "Error: Usuario no autenticado")
+                return Result.failure(Exception("Usuario no autenticado"))
+            }
 
             val pedidoId = pedidosCollection.document().id
+            Log.d(TAG, "ID del pedido generado: $pedidoId")
+
             val pedidoConId = pedido.copy(id = pedidoId)
 
             val pedidoData = hashMapOf(
@@ -49,11 +58,16 @@ class PedidosRepository(
                 "observaciones" to pedidoConId.observaciones
             )
 
+            Log.d(TAG, "Preparando envío a Firebase...")
+            Log.d(TAG, "Total del pedido: ${pedidoConId.total}")
+            Log.d(TAG, "Cantidad de productos: ${pedidoConId.productos.size}")
+
             pedidosCollection.document(pedidoId).set(pedidoData).await()
-            Log.d(TAG, "Pedido creado exitosamente: $pedidoId")
+
+            Log.d(TAG, "✅ Pedido creado exitosamente: $pedidoId")
             Result.success(pedidoId)
         } catch (e: Exception) {
-            Log.e(TAG, "Error al crear pedido", e)
+            Log.e(TAG, "❌ Error al crear pedido: ${e.message}", e)
             Result.failure(e)
         }
     }

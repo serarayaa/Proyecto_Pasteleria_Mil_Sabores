@@ -2,6 +2,7 @@ package cl.duoc.milsabores.model
 
 data class Pedido(
     val id: String = "",
+    val uid: String = "", // UID del usuario propietario del pedido
     val fecha: Long = System.currentTimeMillis(),
     val productos: List<ProductoPedido> = emptyList(),
     val total: Double = 0.0,

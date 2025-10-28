@@ -1,11 +1,11 @@
 package cl.duoc.milsabores
 
 import android.os.Bundle
-import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import cl.duoc.milsabores.core.AppLogger
 import cl.duoc.milsabores.ui.app.AppNavHost
 import cl.duoc.milsabores.ui.theme.MilsaboresTheme
 import cl.duoc.milsabores.utils.PermissionHelper
@@ -17,9 +17,9 @@ class MainActivity : ComponentActivity() {
         ActivityResultContracts.RequestPermission()
     ) { isGranted: Boolean ->
         if (isGranted) {
-            Log.d("MainActivity", "Permiso de notificaciones concedido")
+            AppLogger.info("Permiso de notificaciones concedido")
         } else {
-            Log.d("MainActivity", "Permiso de notificaciones denegado")
+            AppLogger.warning("Permiso de notificaciones denegado")
         }
     }
 
@@ -27,7 +27,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         try {
-            Log.d("MainActivity", "Iniciando aplicación...")
+            AppLogger.info("Iniciando aplicación Mil Sabores...")
             enableEdgeToEdge()
 
             // Solicitar permisos de notificaciones
@@ -43,10 +43,9 @@ class MainActivity : ComponentActivity() {
                 }
             }
 
-            Log.d("MainActivity", "Aplicación iniciada correctamente")
+            AppLogger.info("Aplicación iniciada correctamente")
         } catch (e: Exception) {
-            Log.e("MainActivity", "Error al iniciar aplicación", e)
-            e.printStackTrace()
+            AppLogger.error("Error crítico al iniciar aplicación", e)
         }
     }
 }

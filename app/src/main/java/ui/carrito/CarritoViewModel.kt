@@ -1,8 +1,10 @@
 package cl.duoc.milsabores.ui.carrito
 
 import android.app.Application
+import android.util.Log
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import cl.duoc.milsabores.data.local.PedidosLocalStorage
 import cl.duoc.milsabores.model.CarritoItem
 import cl.duoc.milsabores.model.EstadoPedido
 import cl.duoc.milsabores.model.Pedido
@@ -10,12 +12,14 @@ import cl.duoc.milsabores.model.ProductoPedido
 import cl.duoc.milsabores.repository.CarritoRepository
 import cl.duoc.milsabores.repository.PedidosRepository
 import cl.duoc.milsabores.service.PedidosObserverService
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeoutOrNull
 
 data class CarritoUiState(
     val procesandoPedido: Boolean = false,
@@ -29,6 +33,10 @@ class CarritoViewModel(
     private val repo: CarritoRepository = CarritoRepository.getInstance(),
     private val pedidosRepo: PedidosRepository = PedidosRepository()
 ) : AndroidViewModel(application) {
+
+    // Storage local para pedidos
+    private val pedidosLocalStorage = PedidosLocalStorage(application)
+    private val auth = FirebaseAuth.getInstance()
 
     private val _uiState = MutableStateFlow(CarritoUiState())
     val uiState: StateFlow<CarritoUiState> = _uiState.asStateFlow()
@@ -89,12 +97,24 @@ class CarritoViewModel(
     }
 
     fun finalizarCompra() {
+        Log.d("CarritoVM", "finalizarCompra() llamado")
+
+        // Prevenir múltiples clics
+        if (_uiState.value.procesandoPedido) {
+            Log.d("CarritoVM", "Ya está procesando, ignorando clic")
+            return
+        }
+
         viewModelScope.launch {
+            Log.d("CarritoVM", "Iniciando procesamiento de compra...")
             _uiState.value = _uiState.value.copy(procesandoPedido = true, error = null)
 
             try {
                 val itemsCarrito = items.value
+                Log.d("CarritoVM", "Items en carrito: ${itemsCarrito.size}")
+
                 if (itemsCarrito.isEmpty()) {
+                    Log.w("CarritoVM", "Carrito vacío")
                     _uiState.value = _uiState.value.copy(
                         procesandoPedido = false,
                         error = "El carrito está vacío"
@@ -111,8 +131,14 @@ class CarritoViewModel(
                     )
                 }
 
+                // Obtener UID del usuario autenticado
+                val uid = auth.currentUser?.uid ?: "usuario_local_${System.currentTimeMillis()}"
+                Log.d("CarritoVM", "UID del usuario: $uid")
+
                 // Crear el pedido
                 val pedido = Pedido(
+                    id = "",
+                    uid = uid,
                     fecha = System.currentTimeMillis(),
                     productos = productos,
                     total = total.value,
@@ -120,11 +146,22 @@ class CarritoViewModel(
                     observaciones = _uiState.value.observaciones
                 )
 
-                // Guardar en Firebase
-                pedidosRepo.crearPedido(pedido)
+                Log.d("CarritoVM", "Pedido creado localmente. Total: ${pedido.total}")
+
+                // Guardar en almacenamiento local (MUCHO MÁS RÁPIDO)
+                Log.d("CarritoVM", "Guardando pedido en almacenamiento local...")
+
+                val resultado = pedidosLocalStorage.guardarPedido(pedido)
+
+                resultado
                     .onSuccess { pedidoId ->
-                        // Enviar notificación
-                        pedidosObserver.notificarPedidoCreado(pedidoId, pedido.total)
+                        Log.d("CarritoVM", "✅ Pedido guardado exitosamente en local: $pedidoId")
+                        try {
+                            // Enviar notificación
+                            pedidosObserver.notificarPedidoCreado(pedidoId, pedido.total)
+                        } catch (e: Exception) {
+                            Log.w("CarritoVM", "Error al notificar pedido creado: ${e.message}")
+                        }
 
                         // Limpiar carrito
                         repo.limpiarCarrito()
@@ -135,15 +172,17 @@ class CarritoViewModel(
                         )
                     }
                     .onFailure { error ->
+                        Log.e("CarritoVM", "❌ Error al guardar pedido: ${error.message}", error)
                         _uiState.value = _uiState.value.copy(
                             procesandoPedido = false,
-                            error = error.message ?: "Error al crear el pedido"
+                            error = error.message ?: "Error al crear el pedido. Intenta de nuevo."
                         )
                     }
             } catch (e: Exception) {
+                Log.e("CarritoVM", "❌ Excepción: ${e.message}", e)
                 _uiState.value = _uiState.value.copy(
                     procesandoPedido = false,
-                    error = e.message ?: "Error desconocido"
+                    error = "Error: ${e.localizedMessage ?: e.message ?: "Error desconocido"}"
                 )
             }
         }

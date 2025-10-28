@@ -23,6 +23,7 @@ import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -60,6 +61,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import cl.duoc.milsabores.ui.model.Producto
 import cl.duoc.milsabores.ui.theme.CaramelGold
 import cl.duoc.milsabores.ui.theme.ChocolateBrown
@@ -118,7 +120,7 @@ fun UiProductosCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(340.dp)
+            .height(320.dp)
             .graphicsLayer {
                 scaleX = escala
                 scaleY = escala
@@ -139,14 +141,14 @@ fun UiProductosCard(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(12.dp)
+                    .padding(10.dp)
             ) {
                 // Imagen del producto con efecto de zoom
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(160.dp)
-                        .clip(RoundedCornerShape(16.dp))
+                        .height(140.dp)
+                        .clip(RoundedCornerShape(14.dp))
                         .background(
                             brush = Brush.verticalGradient(
                                 colors = listOf(
@@ -172,7 +174,7 @@ fun UiProductosCard(
                     Box(
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(8.dp)
+                            .padding(6.dp)
                             .background(
                                 brush = Brush.horizontalGradient(
                                     colors = listOf(
@@ -180,20 +182,21 @@ fun UiProductosCard(
                                         PastelPink
                                     )
                                 ),
-                                shape = RoundedCornerShape(12.dp)
+                                shape = RoundedCornerShape(10.dp)
                             )
-                            .padding(horizontal = 12.dp, vertical = 6.dp)
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
                     ) {
                         Text(
                             text = producto.categoria,
                             style = MaterialTheme.typography.labelSmall,
                             color = Color.White,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 10.sp
                         )
                     }
                 }
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(10.dp))
 
                 // Título del producto con animación
                 AnimatedContent(
@@ -205,11 +208,12 @@ fun UiProductosCard(
                 ) { titulo ->
                     Text(
                         text = titulo,
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
-                        color = ChocolateBrown
+                        color = ChocolateBrown,
+                        fontSize = 13.sp
                     )
                 }
 
@@ -221,9 +225,10 @@ fun UiProductosCard(
                 ) {
                     Text(
                         text = producto.precio,
-                        style = MaterialTheme.typography.titleLarge,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = StrawberryRed,
+                        fontSize = 16.sp,
                         modifier = Modifier.graphicsLayer {
                             scaleX = if (presionado) pulso else 1f
                             scaleY = if (presionado) pulso else 1f
@@ -251,8 +256,8 @@ fun UiProductosCard(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(48.dp),
-                        shape = RoundedCornerShape(12.dp),
+                            .height(40.dp),
+                        shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (isAgregado) MintGreen else StrawberryRed
                         ),
@@ -260,7 +265,8 @@ fun UiProductosCard(
                         elevation = ButtonDefaults.buttonElevation(
                             defaultElevation = 4.dp,
                             pressedElevation = 2.dp
-                        )
+                        ),
+                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Row(
                             horizontalArrangement = Arrangement.Center,
@@ -269,12 +275,13 @@ fun UiProductosCard(
                             Icon(
                                 imageVector = if (isAgregado) Icons.Default.Check else Icons.Default.ShoppingCart,
                                 contentDescription = null,
-                                modifier = Modifier.size(20.dp)
+                                modifier = Modifier.size(16.dp)
                             )
-                            Spacer(Modifier.width(8.dp))
+                            Spacer(Modifier.width(6.dp))
                             Text(
                                 text = if (isAgregado) "✓ Agregado" else "Agregar",
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
                             )
                         }
                     }

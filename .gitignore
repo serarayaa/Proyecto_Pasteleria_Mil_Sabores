@@ -13,5 +13,11 @@ captures/
 .idea/
 .DS_Store
 
+# Firebase - NO subir claves sensibles
+google-services.json
+
 # Misc
-# (agrega otros patrones si los necesitas)
+*.apk
+*.aab
+*.dex
+*.class
