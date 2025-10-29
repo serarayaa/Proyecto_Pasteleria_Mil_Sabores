@@ -1,3 +1,4 @@
+// app/src/main/java/cl/duoc/milsabores/model/CarritoItem.kt
 package cl.duoc.milsabores.model
 
 data class CarritoItem(
@@ -7,17 +8,12 @@ data class CarritoItem(
     val imagen: String,
     var cantidad: Int = 1
 ) {
-    val subtotal: Double
-        get() = precio * cantidad
+    val subtotal: Double get() = precio * cantidad
 }
 
 data class Carrito(
     val items: List<CarritoItem> = emptyList()
 ) {
-    val total: Double
-        get() = items.sumOf { it.subtotal }
-
-    val cantidadTotal: Int
-        get() = items.sumOf { it.cantidad }
+    val total: Double get() = items.sumOf { it.subtotal }
+    val cantidadTotal: Int get() = items.sumOf { it.cantidad }
 }
-

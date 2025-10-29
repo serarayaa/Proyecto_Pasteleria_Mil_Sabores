@@ -1,25 +1,32 @@
 package cl.duoc.milsabores.ui.app
 
-
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.runtime.Composable
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import cl.duoc.milsabores.ui.home.HomeScreen
 import cl.duoc.milsabores.ui.login.LoginScreen
 import cl.duoc.milsabores.ui.principal.PrincipalScreen
 import cl.duoc.milsabores.ui.recover.RecuperarPasswordScreen
 import cl.duoc.milsabores.ui.register.RegistrarseScreen
+import com.google.accompanist.navigation.animation.AnimatedNavHost
+import com.google.accompanist.navigation.animation.composable
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalAnimationApi::class)
 @Composable
-fun AppNavHost() {
+fun AppNavHost(onDarkModeChanged: (Boolean) -> Unit = {}) {
     val nav = rememberNavController()
+    val dur = 300
 
-    NavHost(
+    AnimatedNavHost(
         navController = nav,
-        startDestination = Routes.HomeRoot.path
+        startDestination = Routes.HomeRoot.path,
+        enterTransition = { slideInHorizontally(initialOffsetX = { it }, animationSpec = tween(dur)) },
+        exitTransition  = { slideOutHorizontally(targetOffsetX = { -it / 2 }, animationSpec = tween(dur)) },
+        popEnterTransition = { slideInHorizontally(initialOffsetX = { -it / 2 }, animationSpec = tween(dur)) },
+        popExitTransition  = { slideOutHorizontally(targetOffsetX = { it }, animationSpec = tween(dur)) }
     ) {
         composable(Routes.HomeRoot.path) {
             HomeScreen(
@@ -35,7 +42,6 @@ fun AppNavHost() {
                 onLoginSuccess = {
                     nav.navigate(Routes.Principal.path) {
                         launchSingleTop = true
-                        // Si quieres bloquear volver al login:
                         popUpTo(Routes.HomeRoot.path) { inclusive = false }
                     }
                 }
@@ -46,11 +52,11 @@ fun AppNavHost() {
             PrincipalScreen(
                 onLogout = {
                     nav.navigate(Routes.HomeRoot.path) {
-                        // Limpia todo hasta Home para que el botón atrás no vuelva al principal
                         popUpTo(Routes.HomeRoot.path) { inclusive = true }
                         launchSingleTop = true
                     }
-                }
+                },
+                onDarkModeChanged = onDarkModeChanged
             )
         }
 

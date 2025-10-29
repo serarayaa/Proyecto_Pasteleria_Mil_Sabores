@@ -1,15 +1,9 @@
 package cl.duoc.milsabores.ui.login
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.*
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -19,6 +13,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
@@ -29,9 +24,14 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -80,7 +80,7 @@ fun LoginScreen(
                 )
             )
     ) {
-        // Círculos decorativos de fondo
+        // círculos decorativos
         Box(
             modifier = Modifier
                 .size(300.dp)
@@ -101,10 +101,13 @@ fun LoginScreen(
                 TopAppBar(
                     title = { },
                     navigationIcon = {
-                        IconButton(onClick = onBack) {
+                        IconButton(
+                            onClick = onBack,
+                            modifier = Modifier.semantics { contentDescription = "Volver" }
+                        ) {
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Volver",
+                                contentDescription = null,
                                 tint = ChocolateBrown
                             )
                         }
@@ -126,7 +129,6 @@ fun LoginScreen(
             ) {
                 Spacer(Modifier.height(20.dp))
 
-                // Logo con animación
                 AnimatedVisibility(
                     visible = visible,
                     enter = scaleIn(
@@ -149,7 +151,7 @@ fun LoginScreen(
                         ) {
                             Image(
                                 painter = painterResource(R.drawable.logo),
-                                contentDescription = "Logo",
+                                contentDescription = "Logo Mil Sabores",
                                 modifier = Modifier.size(100.dp)
                             )
                         }
@@ -158,7 +160,6 @@ fun LoginScreen(
 
                 Spacer(Modifier.height(24.dp))
 
-                // Título con animación
                 AnimatedVisibility(
                     visible = visible,
                     enter = slideInVertically { -40 } + fadeIn(tween(500))
@@ -183,7 +184,6 @@ fun LoginScreen(
 
                 Spacer(Modifier.height(40.dp))
 
-                // Card con formulario
                 AnimatedVisibility(
                     visible = visible,
                     enter = slideInVertically { 40 } + fadeIn(tween(500, delayMillis = 200))
@@ -201,9 +201,8 @@ fun LoginScreen(
                                 .padding(24.dp),
                             verticalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
-                            // Campo Email
                             val emailValid = state.email.isNotEmpty() &&
-                                android.util.Patterns.EMAIL_ADDRESS.matcher(state.email).matches()
+                                    android.util.Patterns.EMAIL_ADDRESS.matcher(state.email).matches()
 
                             OutlinedTextField(
                                 value = state.email,
@@ -233,10 +232,13 @@ fun LoginScreen(
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = StrawberryRed,
                                     unfocusedBorderColor = ChocolateBrown.copy(alpha = 0.3f)
+                                ),
+                                keyboardOptions = KeyboardOptions(
+                                    imeAction = ImeAction.Next,
+                                    autoCorrect = false
                                 )
                             )
 
-                            // Campo Password
                             var passwordVisible by remember { mutableStateOf(false) }
                             val passwordValid = state.password.length >= 6
 
@@ -251,11 +253,16 @@ fun LoginScreen(
                                     Icon(Icons.Outlined.Lock, contentDescription = null, tint = StrawberryRed)
                                 },
                                 trailingIcon = {
-                                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                    IconButton(
+                                        onClick = { passwordVisible = !passwordVisible },
+                                        modifier = Modifier.semantics {
+                                            contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
+                                        }
+                                    ) {
                                         Icon(
                                             if (passwordVisible) Icons.Outlined.Visibility
                                             else Icons.Outlined.VisibilityOff,
-                                            contentDescription = if (passwordVisible) "Ocultar" else "Mostrar",
+                                            contentDescription = null,
                                             tint = ChocolateBrown.copy(alpha = 0.6f)
                                         )
                                     }
@@ -271,10 +278,18 @@ fun LoginScreen(
                                 colors = OutlinedTextFieldDefaults.colors(
                                     focusedBorderColor = StrawberryRed,
                                     unfocusedBorderColor = ChocolateBrown.copy(alpha = 0.3f)
+                                ),
+                                keyboardOptions = KeyboardOptions(
+                                    imeAction = ImeAction.Done,
+                                    autoCorrect = false
+                                ),
+                                keyboardActions = KeyboardActions(
+                                    onDone = {
+                                        if (!state.loading && emailValid && passwordValid) vm.submit()
+                                    }
                                 )
                             )
 
-                            // Mensaje de error
                             AnimatedVisibility(
                                 visible = state.error != null,
                                 enter = slideInVertically() + fadeIn(),
@@ -310,14 +325,14 @@ fun LoginScreen(
 
                             Spacer(Modifier.height(8.dp))
 
-                            // Botón Ingresar con gradiente
                             Button(
                                 onClick = vm::submit,
                                 enabled = !state.loading && emailValid && passwordValid,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(56.dp)
-                                    .shadow(4.dp, RoundedCornerShape(16.dp)),
+                                    .shadow(4.dp, RoundedCornerShape(16.dp))
+                                    .semantics { contentDescription = "Ingresar" },
                                 shape = RoundedCornerShape(16.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = StrawberryRed,
@@ -331,7 +346,7 @@ fun LoginScreen(
                                         strokeWidth = 2.dp
                                     )
                                 } else {
-                                    Icon(Icons.Filled.Login, contentDescription = null)
+                                    Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null)
                                     Spacer(Modifier.width(8.dp))
                                     Text(
                                         "Ingresar",
@@ -340,13 +355,21 @@ fun LoginScreen(
                                     )
                                 }
                             }
+
+                            // Botón de invitado bajo el botón principal
+                            TextButton(
+                                onClick = { vm.guestLogin() },
+                                enabled = !state.loading,
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text("Ingresar como invitado", color = ChocolateBrown)
+                            }
                         }
                     }
                 }
 
                 Spacer(Modifier.height(32.dp))
 
-                // Footer con cake icon
                 AnimatedVisibility(
                     visible = visible,
                     enter = fadeIn(tween(500, delayMillis = 400))
@@ -373,7 +396,6 @@ fun LoginScreen(
             }
         }
 
-        // Loading overlay
         AnimatedVisibility(
             visible = state.loading,
             modifier = Modifier.align(Alignment.Center),

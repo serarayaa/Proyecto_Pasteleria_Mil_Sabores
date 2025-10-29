@@ -1,5 +1,7 @@
 package cl.duoc.milsabores.ui.settings
 
+import cl.duoc.milsabores.data.local.Prefs
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -37,6 +39,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.text.font.FontWeight
@@ -52,11 +55,13 @@ import cl.duoc.milsabores.ui.theme.VanillaWhite
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(onModoOscuroChanged: (Boolean) -> Unit = {}) {
-    var modoOscuro by remember { mutableStateOf(false) }
+    val ctx = LocalContext.current
+    val prefs = remember { Prefs(ctx) }
+    var modoOscuro by remember { mutableStateOf(prefs.darkMode) }
 
     // Cargar preferencia guardada
     LaunchedEffect(Unit) {
-        // TODO: Cargar del localStorage si implementas persistencia
+        onModoOscuroChanged(prefs.darkMode)
     }
 
     Scaffold(
@@ -104,6 +109,7 @@ fun SettingsScreen(onModoOscuroChanged: (Boolean) -> Unit = {}) {
                     .shadow(4.dp, RoundedCornerShape(16.dp))
                     .clickable {
                         modoOscuro = !modoOscuro
+                        prefs.darkMode = modoOscuro
                         onModoOscuroChanged(modoOscuro)
                     },
                 shape = RoundedCornerShape(16.dp),
@@ -151,6 +157,7 @@ fun SettingsScreen(onModoOscuroChanged: (Boolean) -> Unit = {}) {
                         checked = modoOscuro,
                         onCheckedChange = {
                             modoOscuro = it
+                            prefs.darkMode = it
                             onModoOscuroChanged(it)
                         },
                         modifier = Modifier.scale(1.2f)
@@ -235,9 +242,3 @@ fun InfoCard(
         }
     }
 }
-
-// Extensión para Scale
-private fun Modifier.scale(scale: Float): Modifier {
-    return this.then(Modifier)
-}
-

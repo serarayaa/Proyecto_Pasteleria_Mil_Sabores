@@ -1,6 +1,8 @@
+// app/src/main/java/cl/duoc/milsabores/repository/PedidosRepository.kt
 package cl.duoc.milsabores.repository
 
-import android.util.Log
+import cl.duoc.milsabores.core.AppLogger
+import cl.duoc.milsabores.core.Result
 import cl.duoc.milsabores.model.EstadoPedido
 import cl.duoc.milsabores.model.Pedido
 import cl.duoc.milsabores.model.ProductoPedido
@@ -18,67 +20,38 @@ class PedidosRepository(
 ) {
     private val pedidosCollection = firestore.collection("pedidos")
 
-    companion object {
-        private const val TAG = "PedidosRepository"
-    }
-
-    /**
-     * Crear un nuevo pedido en Firebase
-     */
     suspend fun crearPedido(pedido: Pedido): Result<String> {
         return try {
-            Log.d(TAG, "Iniciando creación de pedido...")
-
-            val uid = auth.currentUser?.uid
-            Log.d(TAG, "UID del usuario: $uid")
-
-            if (uid == null) {
-                Log.e(TAG, "Error: Usuario no autenticado")
-                return Result.failure(Exception("Usuario no autenticado"))
-            }
-
+            AppLogger.d("Creando pedido...", "PedidosRepo")
+            val uid = auth.currentUser?.uid ?: return Result.Error("Usuario no autenticado")
             val pedidoId = pedidosCollection.document().id
-            Log.d(TAG, "ID del pedido generado: $pedidoId")
-
             val pedidoConId = pedido.copy(id = pedidoId)
 
             val pedidoData = hashMapOf(
                 "id" to pedidoConId.id,
                 "uid" to uid,
                 "fecha" to pedidoConId.fecha,
-                "productos" to pedidoConId.productos.map { producto ->
-                    hashMapOf(
-                        "nombre" to producto.nombre,
-                        "cantidad" to producto.cantidad,
-                        "precio" to producto.precio
-                    )
+                "productos" to pedidoConId.productos.map { p ->
+                    hashMapOf("nombre" to p.nombre, "cantidad" to p.cantidad, "precio" to p.precio)
                 },
                 "total" to pedidoConId.total,
                 "estado" to pedidoConId.estado.name,
                 "observaciones" to pedidoConId.observaciones
             )
 
-            Log.d(TAG, "Preparando envío a Firebase...")
-            Log.d(TAG, "Total del pedido: ${pedidoConId.total}")
-            Log.d(TAG, "Cantidad de productos: ${pedidoConId.productos.size}")
-
             pedidosCollection.document(pedidoId).set(pedidoData).await()
-
-            Log.d(TAG, "✅ Pedido creado exitosamente: $pedidoId")
-            Result.success(pedidoId)
+            AppLogger.i("Pedido creado: $pedidoId", "PedidosRepo")
+            Result.Success(pedidoId)
         } catch (e: Exception) {
-            Log.e(TAG, "❌ Error al crear pedido: ${e.message}", e)
-            Result.failure(e)
+            AppLogger.e("Error creando pedido", e, "PedidosRepo")
+            Result.Error("No se pudo crear el pedido", e)
         }
     }
 
-    /**
-     * Obtener pedidos del usuario actual en tiempo real
-     */
     fun observarPedidosUsuario(): Flow<List<Pedido>> = callbackFlow {
         val uid = auth.currentUser?.uid
         if (uid == null) {
-            Log.e(TAG, "Usuario no autenticado")
+            AppLogger.w("observarPedidosUsuario: usuario no autenticado", "PedidosRepo")
             trySend(emptyList())
             close()
             return@callbackFlow
@@ -89,41 +62,36 @@ class PedidosRepository(
             .orderBy("fecha", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    Log.e(TAG, "Error al observar pedidos", error)
-                    trySend(emptyList())
-                    return@addSnapshotListener
+                    AppLogger.e("Error observando pedidos", error, "PedidosRepo")
+                    trySend(emptyList()); return@addSnapshotListener
                 }
-
                 val pedidos = snapshot?.documents?.mapNotNull { doc ->
-                    try {
-                        val productosData = doc.get("productos") as? List<HashMap<String, Any>>
-                        val productos = productosData?.map { producto ->
+                    runCatching {
+                        val productosData = doc.get("productos") as? List<Map<String, Any>>
+                        val productos = productosData?.map { pr ->
                             ProductoPedido(
-                                nombre = producto["nombre"] as? String ?: "",
-                                cantidad = (producto["cantidad"] as? Long)?.toInt() ?: 0,
-                                precio = (producto["precio"] as? Number)?.toDouble() ?: 0.0
+                                nombre = pr["nombre"] as? String ?: "",
+                                cantidad = (pr["cantidad"] as? Number)?.toInt() ?: 0,
+                                precio = (pr["precio"] as? Number)?.toDouble() ?: 0.0
                             )
                         } ?: emptyList()
 
-                        val estadoStr = doc.getString("estado") ?: "PENDIENTE"
-                        val estado = try {
-                            EstadoPedido.valueOf(estadoStr)
-                        } catch (e: Exception) {
-                            EstadoPedido.PENDIENTE
-                        }
+                        val estado = runCatching {
+                            EstadoPedido.valueOf(doc.getString("estado") ?: "PENDIENTE")
+                        }.getOrDefault(EstadoPedido.PENDIENTE)
 
                         Pedido(
                             id = doc.getString("id") ?: doc.id,
+                            uid = uid,
                             fecha = doc.getLong("fecha") ?: System.currentTimeMillis(),
                             productos = productos,
-                            total = doc.getDouble("total") ?: 0.0,
+                            total = (doc.get("total") as? Number)?.toDouble() ?: 0.0,
                             estado = estado,
                             observaciones = doc.getString("observaciones") ?: ""
                         )
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error al parsear pedido: ${doc.id}", e)
-                        null
-                    }
+                    }.onFailure {
+                        AppLogger.e("Parse error pedido ${doc.id}", it, "PedidosRepo")
+                    }.getOrNull()
                 } ?: emptyList()
 
                 trySend(pedidos)
@@ -132,135 +100,107 @@ class PedidosRepository(
         awaitClose { listener.remove() }
     }
 
-    /**
-     * Obtener un pedido específico por ID
-     */
     suspend fun obtenerPedido(pedidoId: String): Result<Pedido> {
         return try {
             val doc = pedidosCollection.document(pedidoId).get().await()
+            if (!doc.exists()) return Result.Error("Pedido no encontrado")
 
-            if (!doc.exists()) {
-                return Result.failure(Exception("Pedido no encontrado"))
-            }
-
-            val productosData = doc.get("productos") as? List<HashMap<String, Any>>
-            val productos = productosData?.map { producto ->
+            val productosData = doc.get("productos") as? List<Map<String, Any>>
+            val productos = productosData?.map { pr ->
                 ProductoPedido(
-                    nombre = producto["nombre"] as? String ?: "",
-                    cantidad = (producto["cantidad"] as? Long)?.toInt() ?: 0,
-                    precio = (producto["precio"] as? Number)?.toDouble() ?: 0.0
+                    nombre = pr["nombre"] as? String ?: "",
+                    cantidad = (pr["cantidad"] as? Number)?.toInt() ?: 0,
+                    precio = (pr["precio"] as? Number)?.toDouble() ?: 0.0
                 )
             } ?: emptyList()
 
-            val estadoStr = doc.getString("estado") ?: "PENDIENTE"
-            val estado = try {
-                EstadoPedido.valueOf(estadoStr)
-            } catch (e: Exception) {
-                EstadoPedido.PENDIENTE
-            }
+            val estado = runCatching {
+                EstadoPedido.valueOf(doc.getString("estado") ?: "PENDIENTE")
+            }.getOrDefault(EstadoPedido.PENDIENTE)
 
+            val uid = auth.currentUser?.uid ?: ""
             val pedido = Pedido(
                 id = doc.getString("id") ?: doc.id,
+                uid = uid,
                 fecha = doc.getLong("fecha") ?: System.currentTimeMillis(),
                 productos = productos,
-                total = doc.getDouble("total") ?: 0.0,
+                total = (doc.get("total") as? Number)?.toDouble() ?: 0.0,
                 estado = estado,
                 observaciones = doc.getString("observaciones") ?: ""
             )
-
-            Result.success(pedido)
+            Result.Success(pedido)
         } catch (e: Exception) {
-            Log.e(TAG, "Error al obtener pedido", e)
-            Result.failure(e)
+            AppLogger.e("Error obteniendo pedido", e, "PedidosRepo")
+            Result.Error("No se pudo obtener el pedido", e)
         }
     }
 
-    /**
-     * Actualizar el estado de un pedido (admin)
-     */
     suspend fun actualizarEstadoPedido(pedidoId: String, nuevoEstado: EstadoPedido): Result<Unit> {
         return try {
-            pedidosCollection.document(pedidoId)
-                .update("estado", nuevoEstado.name)
-                .await()
-            Log.d(TAG, "Estado del pedido $pedidoId actualizado a ${nuevoEstado.name}")
-            Result.success(Unit)
+            pedidosCollection.document(pedidoId).update("estado", nuevoEstado.name).await()
+            AppLogger.i("Estado actualizado $pedidoId → ${nuevoEstado.name}", "PedidosRepo")
+            Result.Success(Unit)
         } catch (e: Exception) {
-            Log.e(TAG, "Error al actualizar estado del pedido", e)
-            Result.failure(e)
+            AppLogger.e("Error actualizando estado", e, "PedidosRepo")
+            Result.Error("No se pudo actualizar el estado", e)
         }
     }
 
-    /**
-     * Cancelar un pedido (solo si está PENDIENTE)
-     */
     suspend fun cancelarPedido(pedidoId: String): Result<Unit> {
         return try {
-            val pedido = obtenerPedido(pedidoId).getOrNull()
-                ?: return Result.failure(Exception("Pedido no encontrado"))
-
-            if (pedido.estado != EstadoPedido.PENDIENTE) {
-                return Result.failure(Exception("Solo se pueden cancelar pedidos pendientes"))
+            val pedido = obtenerPedido(pedidoId)
+            val p = (pedido as? Result.Success)?.data
+                ?: return Result.Error("Pedido no encontrado")
+            if (p.estado != EstadoPedido.PENDIENTE) {
+                return Result.Error("Solo se pueden cancelar pedidos pendientes")
             }
-
             pedidosCollection.document(pedidoId).delete().await()
-            Log.d(TAG, "Pedido $pedidoId cancelado")
-            Result.success(Unit)
+            AppLogger.i("Pedido cancelado $pedidoId", "PedidosRepo")
+            Result.Success(Unit)
         } catch (e: Exception) {
-            Log.e(TAG, "Error al cancelar pedido", e)
-            Result.failure(e)
+            AppLogger.e("Error cancelando pedido", e, "PedidosRepo")
+            Result.Error("No se pudo cancelar el pedido", e)
         }
     }
 
-    /**
-     * Obtener todos los pedidos (admin)
-     */
     fun observarTodosPedidos(): Flow<List<Pedido>> = callbackFlow {
         val listener = pedidosCollection
             .orderBy("fecha", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    Log.e(TAG, "Error al observar todos los pedidos", error)
-                    trySend(emptyList())
-                    return@addSnapshotListener
+                    AppLogger.e("Error observando todos los pedidos", error, "PedidosRepo")
+                    trySend(emptyList()); return@addSnapshotListener
                 }
-
                 val pedidos = snapshot?.documents?.mapNotNull { doc ->
-                    try {
-                        val productosData = doc.get("productos") as? List<HashMap<String, Any>>
-                        val productos = productosData?.map { producto ->
+                    runCatching {
+                        val productosData = doc.get("productos") as? List<Map<String, Any>>
+                        val productos = productosData?.map { pr ->
                             ProductoPedido(
-                                nombre = producto["nombre"] as? String ?: "",
-                                cantidad = (producto["cantidad"] as? Long)?.toInt() ?: 0,
-                                precio = (producto["precio"] as? Number)?.toDouble() ?: 0.0
+                                nombre = pr["nombre"] as? String ?: "",
+                                cantidad = (pr["cantidad"] as? Number)?.toInt() ?: 0,
+                                precio = (pr["precio"] as? Number)?.toDouble() ?: 0.0
                             )
                         } ?: emptyList()
 
-                        val estadoStr = doc.getString("estado") ?: "PENDIENTE"
-                        val estado = try {
-                            EstadoPedido.valueOf(estadoStr)
-                        } catch (e: Exception) {
-                            EstadoPedido.PENDIENTE
-                        }
+                        val estado = runCatching {
+                            EstadoPedido.valueOf(doc.getString("estado") ?: "PENDIENTE")
+                        }.getOrDefault(EstadoPedido.PENDIENTE)
 
                         Pedido(
                             id = doc.getString("id") ?: doc.id,
                             fecha = doc.getLong("fecha") ?: System.currentTimeMillis(),
                             productos = productos,
-                            total = doc.getDouble("total") ?: 0.0,
+                            total = (doc.get("total") as? Number)?.toDouble() ?: 0.0,
                             estado = estado,
                             observaciones = doc.getString("observaciones") ?: ""
                         )
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error al parsear pedido: ${doc.id}", e)
-                        null
-                    }
+                    }.onFailure {
+                        AppLogger.e("Parse error pedido ${doc.id}", it, "PedidosRepo")
+                    }.getOrNull()
                 } ?: emptyList()
 
                 trySend(pedidos)
             }
-
         awaitClose { listener.remove() }
     }
 }
-

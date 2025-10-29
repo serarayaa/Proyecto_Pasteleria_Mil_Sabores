@@ -18,9 +18,11 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.scale
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -37,6 +39,7 @@ fun FloatingActionButtonWithAnimation(
     content: @Composable () -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "fab")
+    // ✅ Esta escala antes no se aplicaba a ningún sitio; ahora sí.
     val scale by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = 1.1f,
@@ -50,6 +53,7 @@ fun FloatingActionButtonWithAnimation(
     Surface(
         modifier = modifier
             .size(56.dp)
+            .scale(scale) // ✅ aplica la animación
             .shadow(8.dp, CircleShape),
         shape = CircleShape,
         color = StrawberryRed,
@@ -80,7 +84,7 @@ fun ShimmerEffect(
     val infiniteTransition = rememberInfiniteTransition(label = "shimmer")
     val offset by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = 1000f,
+        targetValue = 800f, // un rango razonable para moverse a través del ancho
         animationSpec = infiniteRepeatable(
             animation = tween(1500, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
@@ -88,17 +92,18 @@ fun ShimmerEffect(
         label = "offset"
     )
 
+    // ✅ Gradiente con “banda” luminosa más marcada para efecto shimmer claro
+    val highlight = Color.White.copy(alpha = 0.60f)
+    val baseLight = Color.LightGray.copy(alpha = 0.25f)
+    val baseDark = Color.Gray.copy(alpha = 0.15f)
+
     Box(
         modifier = modifier
             .background(
                 brush = Brush.linearGradient(
-                    colors = listOf(
-                        Color.Gray.copy(alpha = 0.2f),
-                        Color.Gray.copy(alpha = 0.4f),
-                        Color.Gray.copy(alpha = 0.2f)
-                    ),
-                    start = androidx.compose.ui.geometry.Offset(offset, offset),
-                    end = androidx.compose.ui.geometry.Offset(offset + 200f, offset + 200f)
+                    colors = listOf(baseDark, highlight, baseLight, baseDark),
+                    start = androidx.compose.ui.geometry.Offset(x = -200f + offset, y = 0f),
+                    end = androidx.compose.ui.geometry.Offset(x = offset, y = 0f)
                 )
             )
     )
@@ -132,7 +137,7 @@ fun PulsingBadge(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
             contentAlignment = androidx.compose.ui.Alignment.Center
         ) {
-            androidx.compose.material3.Text(
+            Text(
                 text = text,
                 style = MaterialTheme.typography.labelSmall,
                 color = ChocolateBrown
@@ -140,4 +145,3 @@ fun PulsingBadge(
         }
     }
 }
-

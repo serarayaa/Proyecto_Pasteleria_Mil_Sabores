@@ -1,4 +1,4 @@
-// app/src/main/java/ui/recover/RecuperarPasswordViewModel.kt
+// app/src/main/java/cl/duoc/milsabores/ui/recover/RecuperarPasswordViewModel.kt
 package cl.duoc.milsabores.ui.recover
 
 import android.util.Patterns
@@ -24,7 +24,9 @@ class RecuperarPasswordViewModel(
     private val _ui = MutableStateFlow(RecoverUiState())
     val ui: StateFlow<RecoverUiState> = _ui
 
-    fun onEmailChange(v: String) = _ui.update { it.copy(email = v, error = null, sent = false) }
+    fun onEmailChange(v: String) {
+        _ui.update { it.copy(email = v, error = null, sent = false) }
+    }
 
     fun submit() {
         val s = _ui.value
@@ -38,7 +40,7 @@ class RecuperarPasswordViewModel(
                 repo.sendPasswordReset(s.email)
                 _ui.update { it.copy(loading = false, sent = true) }
             } catch (e: Exception) {
-                _ui.update { it.copy(loading = false, error = (e.message ?: "No se pudo enviar")) }
+                _ui.update { it.copy(loading = false, error = e.message ?: "Error al enviar enlace") }
             }
         }
     }

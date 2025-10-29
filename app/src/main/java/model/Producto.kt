@@ -1,3 +1,4 @@
+// app/src/main/java/cl/duoc/milsabores/ui/model/Producto.kt
 package cl.duoc.milsabores.ui.model
 
 import androidx.annotation.DrawableRes

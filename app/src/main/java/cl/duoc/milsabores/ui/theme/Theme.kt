@@ -8,7 +8,6 @@ import androidx.compose.material3.dynamicDarkColorScheme
 import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 
 private val DarkColorScheme = darkColorScheme(
@@ -17,8 +16,9 @@ private val DarkColorScheme = darkColorScheme(
     tertiary = StrawberryRed,
     background = DarkChocolate,
     surface = DeepBrown,
-    onPrimary = DarkChocolate,
+    onPrimary = DarkChocolate,     // buen contraste con PastelPink en dark
     onSecondary = DarkChocolate,
+    onTertiary = VanillaWhite,
     onBackground = VanillaWhite,
     onSurface = VanillaWhite
 )
@@ -31,8 +31,9 @@ private val LightColorScheme = lightColorScheme(
     surface = PastelCream,
     primaryContainer = GradientPink,
     secondaryContainer = GradientOrange,
-    onPrimary = androidx.compose.ui.graphics.Color.White,
+    onPrimary = VanillaWhite,      // texto blanco sobre rojo frutilla
     onSecondary = ChocolateBrown,
+    onTertiary = ChocolateBrown,
     onBackground = ChocolateBrown,
     onSurface = ChocolateBrown
 )
@@ -40,7 +41,6 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun MilsaboresTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
     dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
@@ -49,7 +49,6 @@ fun MilsaboresTheme(
             val context = LocalContext.current
             if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
-
         darkTheme -> DarkColorScheme
         else -> LightColorScheme
     }
@@ -57,6 +56,7 @@ fun MilsaboresTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        // shapes = Shapes // <- Si quieres bordes redondeados globales, define Shapes.kt y habilita esto
         content = content
     )
 }

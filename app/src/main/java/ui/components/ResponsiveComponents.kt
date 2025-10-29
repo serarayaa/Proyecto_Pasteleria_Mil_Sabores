@@ -13,6 +13,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -30,9 +32,6 @@ import androidx.compose.ui.unit.dp
 import cl.duoc.milsabores.ui.theme.ChocolateBrown
 import cl.duoc.milsabores.ui.theme.StrawberryRed
 
-/**
- * Componente de card para mostrar elementos con información consistente
- */
 @Composable
 fun ResponsiveCard(
     modifier: Modifier = Modifier,
@@ -52,9 +51,6 @@ fun ResponsiveCard(
     }
 }
 
-/**
- * Componente para mostrar mensajes de estado (éxito, error, etc.)
- */
 @Composable
 fun StatusMessage(
     message: String,
@@ -76,11 +72,12 @@ fun StatusMessage(
         StatusType.INFO -> Color(0xFF0C5460)
     }
 
+    // ✅ Ícono acorde al tipo (antes todos eran Close)
     val defaultIcon = when (type) {
-        StatusType.SUCCESS -> Icons.Default.CheckCircle
-        StatusType.ERROR -> Icons.Default.Close
-        StatusType.WARNING -> Icons.Default.Close
-        StatusType.INFO -> Icons.Default.Close
+        StatusType.SUCCESS -> Icons.Filled.CheckCircle
+        StatusType.ERROR -> Icons.Filled.Close
+        StatusType.WARNING -> Icons.Filled.Warning
+        StatusType.INFO -> Icons.Filled.Info
     }
 
     Card(
@@ -114,9 +111,6 @@ enum class StatusType {
     SUCCESS, ERROR, WARNING, INFO
 }
 
-/**
- * Componente para mostrar información en dos columnas
- */
 @Composable
 fun InfoRow(
     label: String,
@@ -145,9 +139,6 @@ fun InfoRow(
     }
 }
 
-/**
- * Botón responsivo que se adapta a diferentes tamaños de pantalla
- */
 @Composable
 fun ResponsiveButton(
     text: String,
@@ -187,9 +178,6 @@ fun ResponsiveButton(
     }
 }
 
-/**
- * Contenedor responsivo que se adapta a diferentes resoluciones
- */
 @Composable
 fun ResponsiveContainer(
     modifier: Modifier = Modifier,
@@ -204,4 +192,3 @@ fun ResponsiveContainer(
         content()
     }
 }
-

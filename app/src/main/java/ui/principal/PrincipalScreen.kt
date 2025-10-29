@@ -1,10 +1,6 @@
 package cl.duoc.milsabores.ui.principal
 
 import android.app.Application
-import android.content.Context
-import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
@@ -71,12 +67,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -99,8 +98,6 @@ import cl.duoc.milsabores.ui.theme.PastelPeach
 import cl.duoc.milsabores.ui.theme.StrawberryRed
 import cl.duoc.milsabores.ui.theme.VanillaWhite
 import com.google.firebase.auth.FirebaseAuth
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
 sealed class BottomItem(
@@ -130,6 +127,11 @@ private fun BottomBar(
 
     NavigationBar {
         bottomItems.forEach { item ->
+            val label = item.title
+            val iconDesc = if (item.route == BottomItem.Cart.route && cantidadCarrito > 0)
+                "Carrito, $cantidadCarrito artículos"
+            else label
+
             NavigationBarItem(
                 selected = currentRoute == item.route,
                 onClick = {
@@ -151,13 +153,13 @@ private fun BottomBar(
                 icon = {
                     if (item.route == BottomItem.Cart.route && cantidadCarrito > 0) {
                         BadgedBox(badge = { Badge { Text("$cantidadCarrito") } }) {
-                            Icon(item.icon, contentDescription = item.title)
+                            Icon(item.icon, contentDescription = iconDesc)
                         }
                     } else {
-                        Icon(item.icon, contentDescription = item.title)
+                        Icon(item.icon, contentDescription = iconDesc)
                     }
                 },
-                label = { Text(item.title) },
+                label = { Text(label) },
                 colors = NavigationBarItemDefaults.colors()
             )
         }
@@ -168,6 +170,7 @@ private fun BottomBar(
 @Composable
 fun PrincipalScreen(
     onLogout: () -> Unit = {},
+    onDarkModeChanged: (Boolean) -> Unit = {},
     vm: PrincipalViewModel = viewModel()
 ) {
     val state by vm.ui.collectAsState()
@@ -178,18 +181,21 @@ fun PrincipalScreen(
     var expanded by remember { mutableStateOf(false) }
     val tabsNav = rememberNavController()
     val context = LocalContext.current
+    val haptics = LocalHapticFeedback.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
 
-    // Calcular número de columnas basado en el ancho de la pantalla
-    // Por defecto usamos 2 columnas para teléfonos
-    val columnas = 2
+    // Columnas adaptativas (mejor en tablets/landscape)
+    val columnas = GridCells.Adaptive(minSize = 170.dp)
 
     LaunchedEffect(state.loggedOut) {
         if (state.loggedOut) onLogout()
     }
 
-    val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(state.error) {
-        state.error?.let { snackbarHostState.showSnackbar(it) }
+        state.error?.let { msg ->
+            scope.launch { snackbarHostState.showSnackbar(msg) }
+        }
     }
 
     Scaffold(
@@ -298,7 +304,9 @@ fun PrincipalScreen(
                             exit = fadeOut() + slideOutVertically()
                         ) {
                             Box(
-                                modifier = Modifier.fillMaxWidth().padding(32.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(32.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 CircularProgressIndicator()
@@ -318,7 +326,7 @@ fun PrincipalScreen(
                         }
 
                         LazyVerticalGrid(
-                            columns = GridCells.Fixed(columnas),
+                            columns = columnas,
                             modifier = Modifier.fillMaxSize(),
                             verticalArrangement = Arrangement.spacedBy(12.dp),
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
@@ -334,23 +342,13 @@ fun PrincipalScreen(
                                 ) {
                                     UiProductosCard(
                                         producto = producto,
+                                        // si quieres marcar algunos como "nuevos" puedes pasar isNuevo = true
                                         onAgregar = {
                                             vm.agregarAlCarrito(producto)
-
-                                            val vibrator = context.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
-                                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                                                vibrator?.vibrate(
-                                                    VibrationEffect.createOneShot(
-                                                        100,
-                                                        VibrationEffect.DEFAULT_AMPLITUDE
-                                                    )
-                                                )
-                                            } else {
-                                                @Suppress("DEPRECATION")
-                                                vibrator?.vibrate(100)
-                                            }
-
-                                            CoroutineScope(Dispatchers.Main).launch {
+                                            // Haptic feedback moderno
+                                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            // Snackbar
+                                            scope.launch {
                                                 snackbarHostState.showSnackbar(
                                                     message = "${producto.titulo} agregado al carrito",
                                                     duration = SnackbarDuration.Short
@@ -386,7 +384,7 @@ fun PrincipalScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        // Icono animado
+                        // Icono
                         Card(
                             modifier = Modifier
                                 .size(120.dp)
@@ -402,7 +400,7 @@ fun PrincipalScreen(
                             ) {
                                 Icon(
                                     Icons.Outlined.FavoriteBorder,
-                                    contentDescription = null,
+                                    contentDescription = "Favoritos",
                                     modifier = Modifier.size(60.dp),
                                     tint = StrawberryRed
                                 )
@@ -469,7 +467,6 @@ fun PrincipalScreen(
                 cl.duoc.milsabores.ui.carrito.CarritoScreen(
                     vm = carritoVm,
                     onPedidoCreado = {
-                        // Navegar a la pantalla de pedidos
                         tabsNav.navigate(BottomItem.Pedidos.route) {
                             popUpTo(BottomItem.Home.route) { saveState = true }
                             launchSingleTop = true
@@ -485,9 +482,7 @@ fun PrincipalScreen(
 
             composable(BottomItem.More.route) {
                 cl.duoc.milsabores.ui.settings.SettingsScreen(
-                    onModoOscuroChanged = { darkMode ->
-                        // TODO: Guardar en SharedPreferences
-                    }
+                    onModoOscuroChanged = onDarkModeChanged
                 )
             }
 
@@ -509,4 +504,3 @@ fun PrincipalScreen(
         }
     }
 }
-

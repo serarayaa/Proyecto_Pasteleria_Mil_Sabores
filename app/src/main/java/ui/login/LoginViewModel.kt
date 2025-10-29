@@ -87,5 +87,18 @@ class LoginViewModel(
         }
     }
 
+    fun guestLogin() {
+        viewModelScope.launch {
+            _ui.update {
+                it.copy(
+                    loading = false,
+                    loggedIn = true,
+                    user = User(uid = "guest", email = "invitado@milsabores.cl"),
+                    message = "Sesión de invitado"
+                )
+            }
+        }
+    }
+
     fun messageConsumed() { _ui.update { it.copy(message = null) } }
 }

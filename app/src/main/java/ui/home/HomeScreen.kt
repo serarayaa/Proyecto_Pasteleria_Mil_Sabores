@@ -16,57 +16,29 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import cl.duoc.milsabores.R
 import cl.duoc.milsabores.ui.home.components.AnimatedLogo
-import cl.duoc.milsabores.ui.theme.CaramelGold
-import cl.duoc.milsabores.ui.theme.ChocolateBrown
-import cl.duoc.milsabores.ui.theme.GradientOrange
-import cl.duoc.milsabores.ui.theme.GradientPink
-import cl.duoc.milsabores.ui.theme.GradientPurple
-import cl.duoc.milsabores.ui.theme.PastelPeach
-import cl.duoc.milsabores.ui.theme.PastelPink
-import cl.duoc.milsabores.ui.theme.StrawberryRed
-import cl.duoc.milsabores.ui.theme.VanillaWhite
+import cl.duoc.milsabores.ui.theme.*
 import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,6 +47,7 @@ fun HomeScreen(
     onLoginClick: () -> Unit,
     onRegisterClick: () -> Unit,
     onRecoverClick: () -> Unit,
+    reduceMotion: Boolean = false // si más adelante agregas un toggle de accesibilidad
 ) {
     var visible by remember { mutableStateOf(false) }
 
@@ -97,7 +70,6 @@ fun HomeScreen(
                 )
             )
     ) {
-        // Decoración de fondo con círculos animados
         AnimatedBackgroundCircles()
 
         Column(
@@ -107,7 +79,6 @@ fun HomeScreen(
             verticalArrangement = Arrangement.Center,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Logo con animación de entrada
             AnimatedVisibility(
                 visible = visible,
                 enter = fadeIn(animationSpec = tween(800)) +
@@ -124,12 +95,12 @@ fun HomeScreen(
                         modifier = Modifier
                             .size(180.dp)
                             .shadow(16.dp, RoundedCornerShape(24.dp)),
-                        logoRes = R.drawable.logo
+                        logoRes = R.drawable.logo,
+                        enableMotion = !reduceMotion
                     )
 
                     Spacer(Modifier.height(24.dp))
 
-                    // Título con efecto de brillo
                     Text(
                         "Pastelería Mil Sabores",
                         style = MaterialTheme.typography.headlineMedium,
@@ -160,7 +131,6 @@ fun HomeScreen(
 
             Spacer(Modifier.height(48.dp))
 
-            // Botones con animación escalonada
             AnimatedVisibility(
                 visible = visible,
                 enter = fadeIn(animationSpec = tween(800, delayMillis = 200)) +
@@ -170,30 +140,30 @@ fun HomeScreen(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    // Botón de Iniciar Sesión - Principal
                     GradientButton(
                         text = "Iniciar Sesión",
                         icon = Icons.AutoMirrored.Filled.Login,
                         onClick = onLoginClick,
                         gradientColors = listOf(StrawberryRed, PastelPink),
-                        isPrimary = true
+                        isPrimary = true,
+                        cd = "Botón iniciar sesión"
                     )
 
-                    // Botón de Registrarse - Secundario
                     GradientButton(
                         text = "Crear Cuenta",
                         icon = Icons.Default.PersonAdd,
                         onClick = onRegisterClick,
                         gradientColors = listOf(CaramelGold, PastelPeach),
-                        isPrimary = false
+                        isPrimary = false,
+                        cd = "Botón crear cuenta"
                     )
 
-                    // Botón de Recuperar Contraseña - Terciario
                     TextButton(
                         onClick = onRecoverClick,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp)
+                            .semantics { contentDescription = "Botón recuperar contraseña" }
                     ) {
                         Text(
                             "¿Olvidaste tu contraseña?",
@@ -206,7 +176,6 @@ fun HomeScreen(
 
             Spacer(Modifier.weight(1f))
 
-            // Insignia decorativa
             AnimatedVisibility(
                 visible = visible,
                 enter = fadeIn(animationSpec = tween(800, delayMillis = 400))
@@ -218,7 +187,7 @@ fun HomeScreen(
                 ) {
                     Icon(
                         Icons.Default.Cake,
-                        contentDescription = null,
+                        contentDescription = null, // decorativo
                         tint = StrawberryRed,
                         modifier = Modifier.size(20.dp)
                     )
@@ -241,6 +210,7 @@ private fun GradientButton(
     onClick: () -> Unit,
     gradientColors: List<Color>,
     isPrimary: Boolean,
+    cd: String,
     modifier: Modifier = Modifier
 ) {
     val interactionSource = remember { MutableInteractionSource() }
@@ -268,7 +238,8 @@ private fun GradientButton(
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
-            },
+            }
+            .semantics { contentDescription = cd },
         shape = RoundedCornerShape(16.dp),
         colors = ButtonDefaults.buttonColors(
             containerColor = Color.Transparent
@@ -279,9 +250,7 @@ private fun GradientButton(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    brush = Brush.horizontalGradient(gradientColors)
-                ),
+                .background(brush = Brush.horizontalGradient(gradientColors)),
             contentAlignment = Alignment.Center
         ) {
             Row(
@@ -290,7 +259,7 @@ private fun GradientButton(
             ) {
                 Icon(
                     icon,
-                    contentDescription = null,
+                    contentDescription = null, // icono dentro del botón no necesita CD extra
                     tint = Color.White,
                     modifier = Modifier.size(24.dp)
                 )
@@ -321,43 +290,28 @@ private fun AnimatedBackgroundCircles() {
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
-        // Círculo 1
         Box(
             modifier = Modifier
                 .size(200.dp)
                 .offset(x = (-100).dp, y = (-100).dp)
-                .background(
-                    GradientPurple.copy(alpha = 0.1f),
-                    shape = androidx.compose.foundation.shape.CircleShape
-                )
+                .background(GradientPurple.copy(alpha = 0.1f), shape = CircleShape)
                 .graphicsLayer { rotationZ = offset1 }
         )
-
-        // Círculo 2
         Box(
             modifier = Modifier
                 .size(150.dp)
                 .align(Alignment.TopEnd)
                 .offset(x = 50.dp, y = (-50).dp)
-                .background(
-                    PastelPink.copy(alpha = 0.1f),
-                    shape = androidx.compose.foundation.shape.CircleShape
-                )
+                .background(PastelPink.copy(alpha = 0.1f), shape = CircleShape)
                 .graphicsLayer { rotationZ = -offset1 }
         )
-
-        // Círculo 3
         Box(
             modifier = Modifier
                 .size(180.dp)
                 .align(Alignment.BottomStart)
                 .offset(x = (-60).dp, y = 60.dp)
-                .background(
-                    CaramelGold.copy(alpha = 0.1f),
-                    shape = androidx.compose.foundation.shape.CircleShape
-                )
+                .background(CaramelGold.copy(alpha = 0.1f), shape = CircleShape)
                 .graphicsLayer { rotationZ = offset1 * 0.5f }
         )
     }
 }
-

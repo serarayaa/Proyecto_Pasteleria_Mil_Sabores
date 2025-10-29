@@ -21,7 +21,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
@@ -29,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import coil.compose.rememberAsyncImagePainter
-import cl.duoc.milsabores.data.media.MediaRepository
 import cl.duoc.milsabores.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -38,32 +39,23 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
     val ui by vm.ui.collectAsState()
     val context = LocalContext.current
 
+    // Carga/recarga inicial de la foto desde almacenamiento local
+    LaunchedEffect(Unit) { vm.refreshProfilePhoto(context) }
+
     var pendingUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-    val cameraPermLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (!granted) {
-            Toast.makeText(context, "Permiso de cámara requerido", Toast.LENGTH_SHORT).show()
-        }
-    }
-
+    // 1) Tomar foto (declarado primero)
     val takePictureLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { ok ->
         try {
             if (ok && pendingUri != null) {
                 val uri = pendingUri!!
-                // Validar que el URI sea válido
-                val saved = vm.saveProfilePhoto(context, uri)
-                if (saved) {
-                    Toast.makeText(context, "Foto de perfil actualizada ✓", Toast.LENGTH_LONG).show()
-                } else {
-                    Toast.makeText(context, "Error: No se pudo guardar la foto", Toast.LENGTH_LONG).show()
-                }
+                vm.saveProfilePhoto(context, uri)
+                Toast.makeText(context, "Foto de perfil actualizada ✓", Toast.LENGTH_LONG).show()
             } else {
-                Toast.makeText(context, "Cancelaste la captura de foto", Toast.LENGTH_SHORT).show()
+                Toast.makeText(context, "Captura cancelada", Toast.LENGTH_SHORT).show()
             }
         } catch (e: Exception) {
             Toast.makeText(context, "Error al guardar: ${e.message}", Toast.LENGTH_LONG).show()
@@ -72,12 +64,57 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
         }
     }
 
+    // 2) Permiso de cámara
+    var permissionGranted by remember { mutableStateOf(false) }
+    val cameraPermLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        permissionGranted = granted
+        if (!granted) {
+            Toast.makeText(context, "Permiso de cámara requerido", Toast.LENGTH_SHORT).show()
+        } else {
+            // Si se concedió, crea destino y lanza cámara
+            val dest = vm.createDestinationUriForCurrentUser(context)
+            if (dest == null) {
+                Toast.makeText(context, "No se pudo crear destino para la foto", Toast.LENGTH_LONG).show()
+            } else {
+                pendingUri = dest
+                takePictureLauncher.launch(dest)
+            }
+        }
+    }
+
+    fun launchCameraFlow() {
+        if (permissionGranted) {
+            val dest = vm.createDestinationUriForCurrentUser(context)
+            if (dest == null) {
+                Toast.makeText(context, "No se pudo crear destino para la foto", Toast.LENGTH_LONG).show()
+            } else {
+                pendingUri = dest
+                takePictureLauncher.launch(dest)
+            }
+        } else {
+            cameraPermLauncher.launch(Manifest.permission.CAMERA)
+        }
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Mi Perfil", fontWeight = FontWeight.Bold) },
+                title = {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Default.AccountCircle,
+                            contentDescription = null,
+                            tint = StrawberryRed,
+                            modifier = Modifier.size(28.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text("Mi Perfil", fontWeight = FontWeight.Bold)
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                    containerColor = GradientPink.copy(alpha = 0.3f)
                 )
             )
         }
@@ -101,20 +138,20 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // === FOTO DE PERFIL ===
-            Box(
+            Card(
                 modifier = Modifier
                     .size(160.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .clickable {
-                        cameraPermLauncher.launch(Manifest.permission.CAMERA)
-                        val mediaRepo = MediaRepository()
-                        val dest = mediaRepo.createImageUriForUser(context, ui.uid ?: return@clickable)
-                        pendingUri = dest
-                        dest?.let { takePictureLauncher.launch(it) }
-                    },
-                contentAlignment = Alignment.Center
+                    .shadow(12.dp, CircleShape)
+                    .clickable { launchCameraFlow() },
+                shape = CircleShape,
+                colors = CardDefaults.cardColors(
+                    containerColor = PastelPeach.copy(alpha = 0.3f)
+                )
             ) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
                 if (ui.profilePhotoUri != null) {
                     Image(
                         painter = rememberAsyncImagePainter(ui.profilePhotoUri),
@@ -131,42 +168,50 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
                     )
                 }
 
-                // Overlay con icono de cámara
-                Box(
-                    modifier = Modifier
-                        .align(Alignment.BottomEnd)
-                        .size(48.dp)
-                        .clip(CircleShape)
-                        .background(MaterialTheme.colorScheme.primary),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Icon(
-                        Icons.Default.CameraAlt,
-                        contentDescription = "Cambiar foto",
-                        tint = MaterialTheme.colorScheme.onPrimary,
-                        modifier = Modifier.size(24.dp)
-                    )
+                    // Overlay con icono de cámara
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.BottomEnd)
+                            .size(48.dp)
+                            .shadow(8.dp, CircleShape)
+                            .clip(CircleShape)
+                            .background(
+                                brush = Brush.horizontalGradient(
+                                    colors = listOf(StrawberryRed, PastelPink)
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.CameraAlt,
+                            contentDescription = "Cambiar foto",
+                            tint = VanillaWhite
+                        )
+                    }
                 }
             }
 
             Text(
                 "Toca para cambiar foto",
-                modifier = Modifier.padding(top = 8.dp),
+                modifier = Modifier.padding(top = 4.dp),
                 fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                fontWeight = FontWeight.Medium,
+                color = ChocolateBrown.copy(alpha = 0.6f)
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
             // === INFORMACIÓN DE USUARIO ===
             Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .shadow(4.dp, RoundedCornerShape(16.dp)),
+                shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow
+                    containerColor = Color.White
                 )
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(20.dp)) {
                     InfoRow("Nombre", ui.displayName ?: "No disponible")
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     InfoRow("Correo", ui.email ?: "No disponible")
@@ -185,37 +230,37 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 Button(
-                    onClick = {
-                        cameraPermLauncher.launch(Manifest.permission.CAMERA)
-                        val mediaRepo = MediaRepository()
-                        val dest = mediaRepo.createImageUriForUser(context, ui.uid ?: return@Button)
-                        pendingUri = dest
-                        dest?.let { takePictureLauncher.launch(it) }
-                    },
+                    onClick = { launchCameraFlow() },
                     modifier = Modifier
                         .weight(1f)
-                        .height(48.dp),
-                    enabled = !ui.isLoading
+                        .height(48.dp)
+                        .shadow(4.dp, RoundedCornerShape(12.dp)),
+                    enabled = !ui.isLoading,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = StrawberryRed
+                    ),
+                    shape = RoundedCornerShape(12.dp)
                 ) {
-                    Icon(Icons.Default.CameraAlt, "Cámara", modifier = Modifier.size(18.dp))
+                    Icon(Icons.Default.CameraAlt, "Cámara")
                     Spacer(modifier = Modifier.width(8.dp))
-                    Text("Tomar foto")
+                    Text("Tomar foto", fontWeight = FontWeight.Bold)
                 }
 
                 if (ui.profilePhotoUri != null) {
-                    Button(
+                    OutlinedButton(
                         onClick = { showDeleteDialog = true },
                         modifier = Modifier
                             .weight(1f)
                             .height(48.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = MaterialTheme.colorScheme.error
                         ),
-                        enabled = !ui.isLoading
+                        enabled = !ui.isLoading,
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Icon(Icons.Default.Delete, "Eliminar", modifier = Modifier.size(18.dp))
+                        Icon(Icons.Default.Delete, "Eliminar")
                         Spacer(modifier = Modifier.width(8.dp))
-                        Text("Eliminar")
+                        Text("Eliminar", fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -223,7 +268,10 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
             // === INDICADOR DE CARGA ===
             if (ui.isLoading) {
                 Spacer(modifier = Modifier.height(16.dp))
-                CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                CircularProgressIndicator(
+                    modifier = Modifier.size(32.dp),
+                    color = StrawberryRed
+                )
             }
 
             // === MENSAJES DE ERROR ===
@@ -258,21 +306,17 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
             confirmButton = {
                 Button(
                     onClick = {
-                        vm.deleteProfilePhoto()
+                        vm.deleteProfilePhoto(context)
                         showDeleteDialog = false
                         Toast.makeText(context, "Foto eliminada", Toast.LENGTH_SHORT).show()
                     },
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.error
                     )
-                ) {
-                    Text("Eliminar")
-                }
+                ) { Text("Eliminar") }
             },
             dismissButton = {
-                TextButton(onClick = { showDeleteDialog = false }) {
-                    Text("Cancelar")
-                }
+                TextButton(onClick = { showDeleteDialog = false }) { Text("Cancelar") }
             }
         )
     }
@@ -284,14 +328,15 @@ private fun InfoRow(label: String, value: String) {
         Text(
             label,
             fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = FontWeight.SemiBold
+            color = ChocolateBrown.copy(alpha = 0.6f),
+            fontWeight = FontWeight.Bold
         )
+        Spacer(Modifier.height(4.dp))
         Text(
             value,
             fontSize = 14.sp,
-            color = MaterialTheme.colorScheme.onSurface,
-            modifier = Modifier.padding(top = 4.dp)
+            color = ChocolateBrown,
+            fontWeight = FontWeight.Medium
         )
     }
 }

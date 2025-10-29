@@ -25,8 +25,7 @@ abstract class AppDatabase : RoomDatabase() {
                     AppDatabase::class.java,
                     "pasteleria_mil_sabores.db"
                 )
-                    // En desarrollo, permite reconstruir si cambia el esquema
-                    .fallbackToDestructiveMigration()
+                    .fallbackToDestructiveMigration() // Desarrollo: migración destructiva
                     .build()
                     .also { INSTANCE = it }
             }

@@ -5,12 +5,12 @@ import androidx.room.PrimaryKey
 
 /**
  * Tabla: recordatorios
- * Requisitos: uid, fecha de creación (dd/MM/yyyy), mensaje
+ * Campos mínimos: uid del usuario, fecha creación (dd/MM/yyyy), mensaje
  */
 @Entity(tableName = "recordatorios")
 data class RecordatorioEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0L,
     val uid: String,
-    val createdAt: String,   // formato: dd/MM/yyyy (manteniendo tu implementación original)
+    val createdAt: String, // dd/MM/yyyy (según tu implementación actual)
     val message: String
 )

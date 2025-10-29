@@ -1,5 +1,6 @@
 package cl.duoc.milsabores.ui.pedidos
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,6 +19,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.filled.Cancel
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.DateRange
@@ -51,17 +53,23 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import cl.duoc.milsabores.R
 import cl.duoc.milsabores.model.EstadoPedido
 import cl.duoc.milsabores.model.Pedido
+import cl.duoc.milsabores.ui.mapper.color
 import cl.duoc.milsabores.ui.theme.CaramelGold
 import cl.duoc.milsabores.ui.theme.ChocolateBrown
 import cl.duoc.milsabores.ui.theme.GradientOrange
 import cl.duoc.milsabores.ui.theme.GradientPink
 import cl.duoc.milsabores.ui.theme.StrawberryRed
 import cl.duoc.milsabores.ui.theme.VanillaWhite
-import java.text.NumberFormat
+import cl.duoc.milsabores.ui.util.clp
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -71,11 +79,11 @@ import java.util.Locale
 fun DetallePedidoScreen(
     pedido: Pedido,
     onBack: () -> Unit,
-    onCancelar: (String) -> Unit = {}
+    onCancelar: (String) -> Unit = {},
+    isLoadingCancel: Boolean = false
 ) {
     var mostrarDialogoCancelar by remember { mutableStateOf(false) }
     val dateFormat = remember { SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault()) }
-    val currencyFormat = remember { NumberFormat.getCurrencyInstance(Locale("es", "CL")) }
 
     // Diálogo de confirmación para cancelar
     if (mostrarDialogoCancelar) {
@@ -168,18 +176,19 @@ fun DetallePedidoScreen(
                                 )
                             }
 
-                            // Badge de estado
+                            // Badge de estado con semántica
                             Box(
                                 modifier = Modifier
                                     .background(
                                         brush = Brush.horizontalGradient(
                                             colors = listOf(
-                                                pedido.estado.color,
-                                                pedido.estado.color.copy(alpha = 0.7f)
+                                                pedido.estado.color(),
+                                                pedido.estado.color().copy(alpha = 0.7f)
                                             )
                                         ),
                                         shape = RoundedCornerShape(12.dp)
                                     )
+                                    .semantics { this.contentDescription = "Estado: ${pedido.estado.displayName}" }
                                     .padding(horizontal = 16.dp, vertical = 8.dp)
                             ) {
                                 Text(
@@ -239,7 +248,6 @@ fun DetallePedidoScreen(
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
 
-                        // Timeline
                         EstadoPedido.entries.forEachIndexed { index, estado ->
                             val isActual = estado == pedido.estado
                             val isCompletado = estado.ordinal <= pedido.estado.ordinal
@@ -248,12 +256,11 @@ fun DetallePedidoScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                // Círculo indicador
                                 Box(
                                     modifier = Modifier
                                         .size(40.dp)
                                         .background(
-                                            if (isCompletado) estado.color else Color.LightGray,
+                                            if (isCompletado) estado.color() else Color.LightGray,
                                             CircleShape
                                         ),
                                     contentAlignment = Alignment.Center
@@ -281,7 +288,6 @@ fun DetallePedidoScreen(
                                 )
                             }
 
-                            // Línea conectora (excepto en el último)
                             if (index < EstadoPedido.entries.size - 1) {
                                 Box(
                                     modifier = Modifier
@@ -289,7 +295,7 @@ fun DetallePedidoScreen(
                                         .width(2.dp)
                                         .height(30.dp)
                                         .background(
-                                            if (isCompletado) estado.color.copy(alpha = 0.5f)
+                                            if (isCompletado) estado.color().copy(alpha = 0.5f)
                                             else Color.LightGray
                                         )
                                 )
@@ -333,34 +339,78 @@ fun DetallePedidoScreen(
                         }
 
                         pedido.productos.forEach { producto ->
-                            Row(
+                            Card(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .padding(vertical = 8.dp),
-                                horizontalArrangement = Arrangement.SpaceBetween
+                                    .padding(vertical = 4.dp),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = CardDefaults.cardColors(
+                                    containerColor = GradientPink.copy(alpha = 0.1f)
+                                )
                             ) {
                                 Row(
-                                    modifier = Modifier.weight(1f),
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(12.dp),
+                                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    verticalAlignment = Alignment.CenterVertically
                                 ) {
+                                    // Miniatura del producto
+                                    Card(
+                                        modifier = Modifier.size(60.dp),
+                                        shape = RoundedCornerShape(8.dp),
+                                        colors = CardDefaults.cardColors(
+                                            containerColor = VanillaWhite
+                                        )
+                                    ) {
+                                        Box(
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentAlignment = Alignment.Center
+                                        ) {
+                                            // Intenta cargar la imagen del producto
+                                            // Si no hay, muestra un ícono de pastel
+                                            Icon(
+                                                Icons.Default.Cake,
+                                                contentDescription = null,
+                                                tint = StrawberryRed.copy(alpha = 0.5f),
+                                                modifier = Modifier.size(32.dp)
+                                            )
+                                        }
+                                    }
+
+                                    Column(modifier = Modifier.weight(1f)) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        ) {
+                                            Text(
+                                                "${producto.cantidad}x",
+                                                style = MaterialTheme.typography.bodyLarge,
+                                                fontWeight = FontWeight.Bold,
+                                                color = StrawberryRed
+                                            )
+                                            Text(
+                                                producto.nombre,
+                                                style = MaterialTheme.typography.bodyMedium,
+                                                fontWeight = FontWeight.SemiBold,
+                                                color = ChocolateBrown
+                                            )
+                                        }
+                                        Spacer(Modifier.height(4.dp))
+                                        Text(
+                                            clp(producto.precio),
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = ChocolateBrown.copy(alpha = 0.7f)
+                                        )
+                                    }
+
                                     Text(
-                                        "${producto.cantidad}x",
-                                        style = MaterialTheme.typography.bodyLarge,
+                                        clp(producto.precio * producto.cantidad),
+                                        style = MaterialTheme.typography.titleMedium,
                                         fontWeight = FontWeight.Bold,
-                                        color = StrawberryRed
-                                    )
-                                    Text(
-                                        producto.nombre,
-                                        style = MaterialTheme.typography.bodyLarge,
                                         color = ChocolateBrown
                                     )
                                 }
-                                Text(
-                                    currencyFormat.format(producto.precio),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = ChocolateBrown
-                                )
                             }
                         }
 
@@ -382,7 +432,7 @@ fun DetallePedidoScreen(
                                 color = ChocolateBrown
                             )
                             Text(
-                                currencyFormat.format(pedido.total),
+                                clp(pedido.total),
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = StrawberryRed
@@ -442,13 +492,14 @@ fun DetallePedidoScreen(
                         onClick = { mostrarDialogoCancelar = true },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
+                        enabled = !isLoadingCancel,
                         colors = ButtonDefaults.outlinedButtonColors(
                             contentColor = MaterialTheme.colorScheme.error
                         )
                     ) {
                         Icon(Icons.Default.Cancel, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Cancelar Pedido")
+                        Text(if (isLoadingCancel) "Cancelando..." else "Cancelar Pedido")
                     }
                 }
             }
@@ -460,4 +511,3 @@ fun DetallePedidoScreen(
         }
     }
 }
-

@@ -40,19 +40,16 @@ class ProfileViewModel(
                 displayName = u?.displayName
             )
         }
-        // Cargar foto de perfil guardada
-        u?.uid?.let { uid ->
-            photoManager?.let { loadProfilePhoto(uid) }
-        }
+        // La carga inicial se hace desde la UI con refreshProfilePhoto(context)
     }
 
-    /**
-     * Carga la foto de perfil guardada localmente
-     */
-    private fun loadProfilePhoto(userId: String) {
+    /** Recarga la foto guardada localmente (usa fallback si no hay inyección). */
+    fun refreshProfilePhoto(context: Context) {
+        val userId = _ui.value.uid ?: return
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                val photoUri = photoManager?.getProfilePhotoUri(userId)
+                val mgr = photoManager ?: ProfilePhotoManager(context)
+                val photoUri = mgr.getProfilePhotoUri(userId)
                 _ui.update { it.copy(profilePhotoUri = photoUri) }
             } catch (e: Exception) {
                 _ui.update { it.copy(error = "Error al cargar foto: ${e.message}") }
@@ -60,61 +57,33 @@ class ProfileViewModel(
         }
     }
 
-    /**
-     * Guarda una nueva foto de perfil localmente
-     * Retorna true si se guardó exitosamente, false si hubo error
-     */
-    fun saveProfilePhoto(context: Context, photoUri: Uri): Boolean {
-        val userId = _ui.value.uid ?: return false
-
-        var result = false
+    /** Guarda una nueva foto de perfil localmente y actualiza estado. */
+    fun saveProfilePhoto(context: Context, photoUri: Uri) {
+        val userId = _ui.value.uid ?: return
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 _ui.update { it.copy(isLoading = true, error = null) }
-
-                val success = photoManager?.saveProfilePhoto(userId, photoUri) ?: false
-
+                val mgr = photoManager ?: ProfilePhotoManager(context)
+                val success = mgr.saveProfilePhoto(userId, photoUri)
                 if (success) {
-                    // Recargar la URI guardada
-                    val savedUri = photoManager?.getProfilePhotoUri(userId)
-                    _ui.update {
-                        it.copy(
-                            profilePhotoUri = savedUri,
-                            isLoading = false
-                        )
-                    }
-                    result = true
+                    val savedUri = mgr.getProfilePhotoUri(userId)
+                    _ui.update { it.copy(profilePhotoUri = savedUri, isLoading = false) }
                 } else {
-                    _ui.update {
-                        it.copy(
-                            error = "No se pudo guardar la foto",
-                            isLoading = false
-                        )
-                    }
-                    result = false
+                    _ui.update { it.copy(error = "No se pudo guardar la foto", isLoading = false) }
                 }
             } catch (e: Exception) {
-                _ui.update {
-                    it.copy(
-                        error = "Error: ${e.message}",
-                        isLoading = false
-                    )
-                }
-                result = false
+                _ui.update { it.copy(error = "Error: ${e.message}", isLoading = false) }
             }
         }
-        return result
     }
 
-    /**
-     * Elimina la foto de perfil
-     */
-    fun deleteProfilePhoto() {
+    /** Elimina la foto de perfil local. */
+    fun deleteProfilePhoto(context: Context) {
         val userId = _ui.value.uid ?: return
-
         viewModelScope.launch(Dispatchers.IO) {
             try {
-                photoManager?.deleteProfilePhoto(userId)
+                val mgr = photoManager ?: ProfilePhotoManager(context)
+                mgr.deleteProfilePhoto(userId)
                 _ui.update { it.copy(profilePhotoUri = null) }
             } catch (e: Exception) {
                 _ui.update { it.copy(error = "Error al eliminar: ${e.message}") }

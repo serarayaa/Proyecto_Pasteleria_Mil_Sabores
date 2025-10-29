@@ -1,6 +1,5 @@
 package cl.duoc.milsabores.ui.app
 
-// Sealed class simple para rutas tipadas
 sealed class Routes(val path: String) {
     data object HomeRoot : Routes("home")
     data object Login : Routes("login")

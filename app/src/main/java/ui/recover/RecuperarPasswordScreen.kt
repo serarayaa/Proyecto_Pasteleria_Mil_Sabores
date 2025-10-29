@@ -13,7 +13,9 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -25,7 +27,12 @@ fun RecuperarPasswordScreen(
     onSent: () -> Unit,
     vm: RecuperarPasswordViewModel = viewModel()
 ) {
-    val ui = vm.ui.collectAsState().value
+    val ui by vm.ui.collectAsState()
+
+    // ✅ Ejecuta efectos fuera de la composición
+    LaunchedEffect(ui.sent) {
+        if (ui.sent) onSent()
+    }
 
     Box(
         modifier = Modifier
@@ -39,7 +46,7 @@ fun RecuperarPasswordScreen(
                 style = MaterialTheme.typography.titleLarge
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(Modifier.height(20.dp))
 
             OutlinedTextField(
                 value = ui.email,
@@ -49,27 +56,23 @@ fun RecuperarPasswordScreen(
                 singleLine = true
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(Modifier.height(20.dp))
 
-            if (ui.error != null) {
-                Text(ui.error, color = MaterialTheme.colorScheme.error)
-                Spacer(modifier = Modifier.height(8.dp))
+            ui.error?.let {
+                Text(it, color = MaterialTheme.colorScheme.error)
+                Spacer(Modifier.height(8.dp))
             }
 
             if (ui.loading) {
                 CircularProgressIndicator()
             } else {
-                Button(onClick = vm::submit) {
+                Button(onClick = vm::submit, enabled = ui.email.isNotBlank()) {
                     Text("Enviar enlace de recuperación")
                 }
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-            TextButton(onClick = onBack) {
-                Text("Volver")
-            }
-
-            if (ui.sent) onSent()
+            Spacer(Modifier.height(12.dp))
+            TextButton(onClick = onBack) { Text("Volver") }
         }
     }
 }

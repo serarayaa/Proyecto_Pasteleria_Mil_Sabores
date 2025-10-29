@@ -1,6 +1,4 @@
 package cl.duoc.milsabores.ui.home.components
-// o si lo guardaste en principal/components:
-// package cl.duoc.milsabores.ui.principal.components
 
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.LinearEasing
@@ -33,6 +31,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import cl.duoc.milsabores.R
 
@@ -44,13 +44,18 @@ fun AnimatedLogo(
         Color(0xFFFFE0B2),
         Color(0xFFFFCC80),
         Color(0xFFFFB74D)
-    )
+    ),
+    enableMotion: Boolean = true, // ✅ opcional: permite desactivar animación
+    cdText: String = "Logo Pastelería Mil Sabores"
 ) {
     var visible by remember { mutableStateOf(false) }
 
-    // Renombramos para evitar choque con graphicsLayer.alpha
+    // Evita recomputar el brush / lista
+    val rememberedGradient = remember(backgroundGradient) { backgroundGradient }
+
+    // Escala / alpha de entrada controladas por estado visible
     val logoScale by animateFloatAsState(
-        targetValue = if (visible) 1f else 0.6f,
+        targetValue = if (visible && enableMotion) 1f else 1f, // igual en reposo
         animationSpec = spring(stiffness = Spring.StiffnessLow),
         label = "scale"
     )
@@ -60,30 +65,38 @@ fun AnimatedLogo(
         label = "alpha"
     )
 
+    // Animaciones infinitas (pulse/rotation) con bypass si enableMotion=false
     val infinite = rememberInfiniteTransition(label = "logoInfinite")
-    val pulse by infinite.animateFloat(
-        initialValue = 0.95f,
-        targetValue = 1.05f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse"
-    )
-    val rotation by infinite.animateFloat(
-        initialValue = -2f,
-        targetValue = 2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "rotation"
-    )
+    val pulse by if (enableMotion) {
+        infinite.animateFloat(
+            initialValue = 0.95f,
+            targetValue = 1.05f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(2000, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "pulse"
+        )
+    } else remember { mutableStateOf(1f) }
+
+    val rotation by if (enableMotion) {
+        infinite.animateFloat(
+            initialValue = -2f,
+            targetValue = 2f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(3000, easing = LinearEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "rotation"
+        )
+    } else remember { mutableStateOf(0f) }
 
     LaunchedEffect(Unit) { visible = true }
 
     Box(
-        modifier = modifier.fillMaxSize(),
+        modifier = modifier
+            .fillMaxSize()
+            .semantics { contentDescription = cdText },
         contentAlignment = Alignment.Center
     ) {
         Surface(
@@ -101,24 +114,24 @@ fun AnimatedLogo(
                         rotationZ = rotation
                     }
             ) {
-                // Capa de fondo con degradado y alpha fijo
+                // Fondo con degradado y alpha fijo
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .graphicsLayer { this.alpha = 0.6f } // ← clave
-                        .background(Brush.radialGradient(backgroundGradient))
+                        .graphicsLayer { this.alpha = 0.6f }
+                        .background(Brush.radialGradient(rememberedGradient))
                 )
 
-                // Logo animado (usa las variables renombradas)
+                // Logo animado (alpha/scale ya renombrados y aplicados)
                 Image(
                     painter = painterResource(id = logoRes),
-                    contentDescription = "Logo Pastelería Mil Sabores",
+                    contentDescription = cdText,
                     modifier = Modifier
                         .fillMaxSize()
                         .graphicsLayer {
                             scaleX = logoScale
                             scaleY = logoScale
-                            this.alpha = logoAlpha // ← clave
+                            this.alpha = logoAlpha
                         },
                     contentScale = ContentScale.Fit
                 )

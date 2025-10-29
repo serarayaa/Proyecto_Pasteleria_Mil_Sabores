@@ -45,6 +45,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,12 +53,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -70,19 +75,21 @@ import cl.duoc.milsabores.ui.theme.GradientPink
 import cl.duoc.milsabores.ui.theme.MintGreen
 import cl.duoc.milsabores.ui.theme.PastelPink
 import cl.duoc.milsabores.ui.theme.StrawberryRed
+import kotlinx.coroutines.delay
 
 @Composable
 fun UiProductosCard(
     producto: Producto,
-    onAgregar: () -> Unit
+    onAgregar: () -> Unit,
+    isNuevo: Boolean = false // ← ahora el pulso “nuevo” es real y opcional
 ) {
     var agregado by remember { mutableStateOf(false) }
     val interactionSource = remember { MutableInteractionSource() }
     val presionado by interactionSource.collectIsPressedAsState()
 
-    // Animaciones avanzadas
+    // Animaciones de escala / elevación
     val escala by animateFloatAsState(
-        targetValue = if (presionado) 0.95f else 1f,
+        targetValue = if (presionado) 0.97f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessLow
@@ -92,10 +99,11 @@ fun UiProductosCard(
 
     val elevacion by animateFloatAsState(
         targetValue = if (presionado) 2f else 6f,
-        animationSpec = tween(200),
+        animationSpec = tween(180),
         label = "elevation"
     )
 
+    // Efecto sutil de inclinación al agregar (con cámara en px para evitar distorsión)
     val rotacionY by animateFloatAsState(
         targetValue = if (agregado) 5f else 0f,
         animationSpec = spring(
@@ -104,18 +112,31 @@ fun UiProductosCard(
         ),
         label = "rotation"
     )
+    val density = LocalDensity.current
+    val cameraDistancePx = with(density) { 16.dp.toPx() }
 
-    // Animación de pulso para productos nuevos
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val pulso by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.05f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulse"
-    )
+    // Pulso sólo si el producto es “nuevo” y aún no se agrega
+    val infinite = rememberInfiniteTransition(label = "pulse")
+    val shouldPulse = isNuevo && !agregado
+    val pulso = if (shouldPulse) {
+        infinite.animateFloat(
+            initialValue = 1f,
+            targetValue = 1.06f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(1000, easing = FastOutSlowInEasing),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "pulse"
+        ).value
+    } else 1f
+
+    // Feedback temporal “Agregado”
+    LaunchedEffect(agregado) {
+        if (agregado) {
+            delay(1200)
+            agregado = false
+        }
+    }
 
     Card(
         modifier = Modifier
@@ -125,17 +146,11 @@ fun UiProductosCard(
                 scaleX = escala
                 scaleY = escala
                 rotationY = rotacionY
-            }
-            .shadow(
-                elevation = elevacion.dp,
-                shape = RoundedCornerShape(20.dp),
-                spotColor = StrawberryRed.copy(alpha = 0.3f),
-                ambientColor = PastelPink.copy(alpha = 0.2f)
-            ),
+                cameraDistance = cameraDistancePx
+            },
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        )
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = elevacion.dp)
     ) {
         Box(modifier = Modifier.fillMaxSize()) {
             Column(
@@ -143,7 +158,7 @@ fun UiProductosCard(
                     .fillMaxSize()
                     .padding(10.dp)
             ) {
-                // Imagen del producto con efecto de zoom
+                // Imagen del producto con zoom sutil al presionar
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -164,8 +179,9 @@ fun UiProductosCard(
                         modifier = Modifier
                             .fillMaxSize()
                             .graphicsLayer {
-                                scaleX = if (presionado) 1.1f else 1f
-                                scaleY = if (presionado) 1.1f else 1f
+                                val zoom = if (presionado) 1.05f else 1f
+                                scaleX = zoom
+                                scaleY = zoom
                             },
                         contentScale = ContentScale.Crop
                     )
@@ -177,10 +193,7 @@ fun UiProductosCard(
                             .padding(6.dp)
                             .background(
                                 brush = Brush.horizontalGradient(
-                                    colors = listOf(
-                                        StrawberryRed,
-                                        PastelPink
-                                    )
+                                    colors = listOf(StrawberryRed, PastelPink)
                                 ),
                                 shape = RoundedCornerShape(10.dp)
                             )
@@ -198,12 +211,10 @@ fun UiProductosCard(
 
                 Spacer(Modifier.height(10.dp))
 
-                // Título del producto con animación
+                // Título animado
                 AnimatedContent(
                     targetState = producto.titulo,
-                    transitionSpec = {
-                        fadeIn() + slideInVertically() togetherWith fadeOut()
-                    },
+                    transitionSpec = { fadeIn() + slideInVertically() togetherWith fadeOut() },
                     label = "title"
                 ) { titulo ->
                     Text(
@@ -219,33 +230,25 @@ fun UiProductosCard(
 
                 Spacer(Modifier.height(4.dp))
 
-                // Precio con efecto de brillo
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                // Precio (String en modelo actual)
+                Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
                         text = producto.precio,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = StrawberryRed,
-                        fontSize = 16.sp,
-                        modifier = Modifier.graphicsLayer {
-                            scaleX = if (presionado) pulso else 1f
-                            scaleY = if (presionado) pulso else 1f
-                        }
+                        fontSize = 16.sp
                     )
                 }
 
                 Spacer(Modifier.weight(1f))
 
-                // Botón animado con transición suave
+                // Botón accesible + transición “agregado”
                 AnimatedContent(
                     targetState = agregado,
                     transitionSpec = {
-                        fadeIn(animationSpec = tween(300)) +
-                        scaleIn(initialScale = 0.8f) togetherWith
-                        fadeOut(animationSpec = tween(300)) +
-                        scaleOut(targetScale = 0.8f)
+                        fadeIn(animationSpec = tween(300)) + scaleIn(initialScale = 0.8f) togetherWith
+                                fadeOut(animationSpec = tween(300)) + scaleOut(targetScale = 0.8f)
                     },
                     label = "button"
                 ) { isAgregado ->
@@ -256,7 +259,12 @@ fun UiProductosCard(
                         },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(40.dp),
+                            .height(40.dp)
+                            .semantics {
+                                role = Role.Button
+                                contentDescription = if (isAgregado)
+                                    "Producto agregado" else "Agregar ${producto.titulo} al carrito"
+                            },
                         shape = RoundedCornerShape(10.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = if (isAgregado) MintGreen else StrawberryRed
@@ -288,8 +296,8 @@ fun UiProductosCard(
                 }
             }
 
-            // Efecto de "nuevo" con animación de pulso
-            if (!agregado) {
+            // Indicador de “nuevo” con pulso (solo si isNuevo)
+            if (shouldPulse) {
                 Box(
                     modifier = Modifier
                         .align(Alignment.TopStart)
@@ -298,14 +306,11 @@ fun UiProductosCard(
                             scaleX = pulso
                             scaleY = pulso
                         }
-                        .background(
-                            CaramelGold,
-                            CircleShape
-                        )
+                        .background(CaramelGold, CircleShape)
                         .size(8.dp)
+                        .semantics { contentDescription = "Producto nuevo" }
                 )
             }
         }
     }
 }
-

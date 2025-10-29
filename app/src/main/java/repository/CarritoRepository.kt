@@ -32,9 +32,7 @@ class CarritoRepository {
             val existing = currentList.find { it.productoId == item.productoId }
             if (existing != null) {
                 currentList.map {
-                    if (it.productoId == item.productoId)
-                        it.copy(cantidad = it.cantidad + 1)
-                    else it
+                    if (it.productoId == item.productoId) it.copy(cantidad = it.cantidad + 1) else it
                 }
             } else {
                 currentList + item
@@ -52,30 +50,18 @@ class CarritoRepository {
             return
         }
         _items.update { currentList ->
-            currentList.map {
-                if (it.productoId == productoId) it.copy(cantidad = nuevaCantidad)
-                else it
-            }
+            currentList.map { if (it.productoId == productoId) it.copy(cantidad = nuevaCantidad) else it }
         }
     }
 
-    fun limpiarCarrito() {
-        _items.value = emptyList()
-    }
+    fun limpiarCarrito() { _items.value = emptyList() }
 
-    fun calcularTotal(): Double {
-        return _items.value.sumOf { it.subtotal }
-    }
+    fun calcularTotal(): Double = _items.value.sumOf { it.subtotal }
 
     companion object {
-        @Volatile
-        private var INSTANCE: CarritoRepository? = null
-
-        fun getInstance(): CarritoRepository {
-            return INSTANCE ?: synchronized(this) {
-                INSTANCE ?: CarritoRepository().also { INSTANCE = it }
-            }
+        @Volatile private var INSTANCE: CarritoRepository? = null
+        fun getInstance(): CarritoRepository = INSTANCE ?: synchronized(this) {
+            INSTANCE ?: CarritoRepository().also { INSTANCE = it }
         }
     }
 }
-

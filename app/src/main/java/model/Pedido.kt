@@ -1,3 +1,4 @@
+// app/src/main/java/cl/duoc/milsabores/model/Pedido.kt
 package cl.duoc.milsabores.model
 
 data class Pedido(
@@ -16,10 +17,9 @@ data class ProductoPedido(
     val precio: Double
 )
 
-enum class EstadoPedido(val displayName: String, val color: androidx.compose.ui.graphics.Color) {
-    PENDIENTE("Pendiente", androidx.compose.ui.graphics.Color(0xFFFFA726)),
-    EN_PREPARACION("En Preparación", androidx.compose.ui.graphics.Color(0xFF42A5F5)),
-    LISTO("Listo para Recoger", androidx.compose.ui.graphics.Color(0xFF66BB6A)),
-    ENTREGADO("Entregado", androidx.compose.ui.graphics.Color(0xFF9E9E9E))
+enum class EstadoPedido(val displayName: String) {
+    PENDIENTE("Pendiente"),
+    EN_PREPARACION("En Preparación"),
+    LISTO("Listo para Recoger"),
+    ENTREGADO("Entregado")
 }
-

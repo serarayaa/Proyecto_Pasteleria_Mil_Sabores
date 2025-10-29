@@ -1,97 +1,73 @@
 package cl.duoc.milsabores.ui.pedidos
 
+import android.app.Application
+import androidx.compose.animation.animateContentSize
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
-import androidx.compose.material.icons.filled.Done
-import androidx.compose.material.icons.filled.ExpandLess
-import androidx.compose.material.icons.filled.ExpandMore
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Kitchen
-import androidx.compose.material.icons.filled.Schedule
-import androidx.compose.material.icons.filled.ShoppingBag
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.ViewModel
-import android.app.Application
-import androidx.compose.ui.platform.LocalContext
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duoc.milsabores.model.EstadoPedido
 import cl.duoc.milsabores.model.Pedido
-import cl.duoc.milsabores.ui.theme.CaramelGold
-import cl.duoc.milsabores.ui.theme.ChocolateBrown
-import cl.duoc.milsabores.ui.theme.GradientOrange
-import cl.duoc.milsabores.ui.theme.GradientPink
-import cl.duoc.milsabores.ui.theme.StrawberryRed
-import cl.duoc.milsabores.ui.theme.VanillaWhite
+import cl.duoc.milsabores.ui.mapper.color
+import cl.duoc.milsabores.ui.theme.*
+import cl.duoc.milsabores.ui.util.clp
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import androidx.compose.foundation.ExperimentalFoundationApi
 
-@OptIn(ExperimentalMaterial3Api::class)
+private val fechaClFormatter by lazy {
+    SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.forLanguageTag("es-ES"))
+}
+private fun formatearFecha(timestamp: Long): String = fechaClFormatter.format(Date(timestamp))
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
-fun PedidosScreen(
-) {
+fun PedidosScreen() {
     val context = LocalContext.current
     val vmFactory = remember {
         object : ViewModelProvider.Factory {
             @Suppress("UNCHECKED_CAST")
             override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return PedidosViewModel(
-                    context.applicationContext as Application
-                ) as T
+                return PedidosViewModel(context.applicationContext as Application) as T
             }
         }
     }
     val vm: PedidosViewModel = viewModel(factory = vmFactory)
     val state by vm.ui.collectAsState()
 
-    // Mostrar pantalla de detalle si hay un pedido seleccionado
+    val snackbarHostState = remember { SnackbarHostState() }
+    LaunchedEffect(state.message) {
+        state.message?.let {
+            snackbarHostState.showSnackbar(it)
+            vm.consumeMessage()
+        }
+    }
+
+    // Pantalla de detalle si hay selección
     if (state.pedidoSeleccionado != null) {
         DetallePedidoScreen(
             pedido = state.pedidoSeleccionado!!,
             onBack = { vm.cerrarDetalle() },
-            onCancelar = { pedidoId -> vm.cancelarPedido(pedidoId) }
+            onCancelar = { pedidoId -> vm.cancelarPedido(pedidoId) },
+            isLoadingCancel = state.loading
         )
         return
     }
@@ -115,7 +91,8 @@ fun PedidosScreen(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
             )
-        }
+        },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { padding ->
         Box(
             modifier = Modifier
@@ -130,33 +107,42 @@ fun PedidosScreen(
                     )
                 )
         ) {
-            if (state.loading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.align(Alignment.Center)
-                )
-            } else if (state.pedidos.isEmpty()) {
-                EmptyPedidosView(modifier = Modifier.align(Alignment.Center))
-            } else {
-                LazyColumn(
-                    contentPadding = PaddingValues(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    item {
-                        Text(
-                            "Historial de Pedidos",
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = ChocolateBrown,
-                            modifier = Modifier.padding(bottom = 8.dp)
-                        )
-                    }
+            when {
+                state.loading -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.Center)
+                    )
+                }
 
-                    items(state.pedidos, key = { it.id }) { pedido ->
-                        PedidoCard(
-                            pedido = pedido,
-                            modifier = Modifier.animateItem(),
-                            onClick = { vm.seleccionarPedido(pedido) }
-                        )
+                state.pedidos.isEmpty() -> {
+                    EmptyPedidosView(
+                        modifier = Modifier.align(Alignment.Center),
+                        onVerProductos = { /* navegar a tienda */ }
+                    )
+                }
+
+                else -> {
+                    LazyColumn(
+                        contentPadding = PaddingValues(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        item {
+                            Text(
+                                "Historial de Pedidos",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = ChocolateBrown,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                        }
+
+                        items(state.pedidos, key = { it.id }) { pedido ->
+                            PedidoCard(
+                                pedido = pedido,
+                                modifier = Modifier.animateContentSize(),
+                                onClick = { vm.seleccionarPedido(pedido) }
+                            )
+                        }
                     }
                 }
             }
@@ -179,7 +165,7 @@ private fun PedidoCard(
             .shadow(
                 elevation = 6.dp,
                 shape = RoundedCornerShape(20.dp),
-                spotColor = pedido.estado.color.copy(alpha = 0.3f)
+                spotColor = pedido.estado.color().copy(alpha = 0.3f)
             ),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
@@ -201,7 +187,7 @@ private fun PedidoCard(
                         modifier = Modifier
                             .size(40.dp)
                             .background(
-                                pedido.estado.color.copy(alpha = 0.2f),
+                                pedido.estado.color().copy(alpha = 0.2f),
                                 CircleShape
                             ),
                         contentAlignment = Alignment.Center
@@ -214,7 +200,7 @@ private fun PedidoCard(
                                 EstadoPedido.ENTREGADO -> Icons.Default.Done
                             },
                             contentDescription = null,
-                            tint = pedido.estado.color,
+                            tint = pedido.estado.color(),
                             modifier = Modifier.size(24.dp)
                         )
                     }
@@ -234,13 +220,14 @@ private fun PedidoCard(
                     }
                 }
 
+                // Badge del estado (con semántica para accesibilidad)
                 Box(
                     modifier = Modifier
                         .background(
                             brush = Brush.horizontalGradient(
                                 colors = listOf(
-                                    pedido.estado.color,
-                                    pedido.estado.color.copy(alpha = 0.7f)
+                                    pedido.estado.color(),
+                                    pedido.estado.color().copy(alpha = 0.7f)
                                 )
                             ),
                             shape = RoundedCornerShape(12.dp)
@@ -259,7 +246,8 @@ private fun PedidoCard(
             Spacer(Modifier.height(16.dp))
 
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                pedido.productos.take(if (expanded) pedido.productos.size else 2).forEach { producto ->
+                val toShow = if (expanded) pedido.productos else pedido.productos.take(2)
+                toShow.forEach { producto ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween
@@ -278,7 +266,7 @@ private fun PedidoCard(
                             )
                         }
                         Text(
-                            "$${String.format(Locale.getDefault(), "%,.0f", producto.precio)}",
+                            clp(producto.precio),
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.SemiBold,
                             color = ChocolateBrown
@@ -347,7 +335,7 @@ private fun PedidoCard(
                     color = ChocolateBrown
                 )
                 Text(
-                    "$${String.format(Locale.getDefault(), "%,.0f", pedido.total)}",
+                    clp(pedido.total),
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.ExtraBold,
                     color = StrawberryRed
@@ -358,7 +346,10 @@ private fun PedidoCard(
 }
 
 @Composable
-private fun EmptyPedidosView(modifier: Modifier = Modifier) {
+private fun EmptyPedidosView(
+    modifier: Modifier = Modifier,
+    onVerProductos: () -> Unit
+) {
     Column(
         modifier = modifier.padding(32.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -383,11 +374,9 @@ private fun EmptyPedidosView(modifier: Modifier = Modifier) {
             style = MaterialTheme.typography.bodyMedium,
             color = ChocolateBrown.copy(alpha = 0.6f)
         )
+        Spacer(Modifier.height(12.dp))
+        TextButton(onClick = onVerProductos) {
+            Text("Ver productos", color = StrawberryRed, fontWeight = FontWeight.Bold)
+        }
     }
 }
-
-private fun formatearFecha(timestamp: Long): String {
-    val formato = SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.forLanguageTag("es-ES"))
-    return formato.format(Date(timestamp))
-}
-
