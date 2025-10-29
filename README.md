@@ -828,8 +828,6 @@ Este proyecto está bajo la Licencia MIT. Ver archivo `LICENSE` para más detall
 
 ---
 
-**Desarrollado con ❤️ y mucho ☕ por el equipo de Mil Sabores**
-
 *Versión: 2.3.0 FINAL | Última actualización: 29 de Octubre de 2025*
 
 ---
