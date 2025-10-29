@@ -9,6 +9,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.MediaStore
 import androidx.annotation.ChecksSdkIntAtLeast
+import androidx.core.content.FileProvider
 import cl.duoc.milsabores.core.AppLogger
 import java.io.File
 
@@ -18,35 +19,37 @@ class MediaRepository {
     private fun isApi29Plus() = Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
 
     /**
-     * Crea un URI de destino para guardar una imagen de perfil.
-     * - En Android 10+ usa MediaStore con RELATIVE_PATH + IS_PENDING.
-     * - En <29 usa cache interna (no requiere permisos de almacenamiento).
-     *
-     * IMPORTANTE: En 29+ debes llamar a [markImageAsComplete] cuando termines de escribir.
+     * Crea un URI de destino para guardar una imagen de perfil usando FileProvider.
+     * Compatible con todos los dispositivos (incluidos Huawei/Honor).
+     * NO requiere permisos de almacenamiento externo.
      */
     fun createImageUriForUser(context: Context, uid: String): Uri? {
         val fileName = "MilSabores_${uid}_${System.currentTimeMillis()}.jpg"
 
-        return if (isApi29Plus()) {
-            val values = ContentValues().apply {
-                put(MediaStore.MediaColumns.DISPLAY_NAME, fileName)
-                put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-                put(MediaStore.Images.Media.RELATIVE_PATH, "${Environment.DIRECTORY_PICTURES}/MilSabores/Profile")
-                put(MediaStore.Images.Media.IS_PENDING, 1) // ✅ evita que aparezca incompleta
+        return try {
+            // Crear directorio en cache interno
+            val imagesDir = File(context.cacheDir, "images").apply {
+                if (!exists()) {
+                    mkdirs()
+                    AppLogger.i("Directorio de imágenes creado: $absolutePath", "MediaRepo")
+                }
             }
-            val collection = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
-            context.contentResolver.insert(collection, values).also {
-                AppLogger.i("URI creado en MediaStore: $it", "MediaRepo")
-            }
-        } else {
-            // Fallback sin permisos: archivo en cache de la app (no visible en galería)
-            val cacheDir = File(context.cacheDir, "images/profile").apply { mkdirs() }
-            val target = File(cacheDir, fileName)
-            runCatching {
-                if (!target.exists()) target.createNewFile()
-                Uri.fromFile(target)
-            }.onFailure { AppLogger.e("Error creando archivo cache", it, "MediaRepo") }
-                .getOrNull()
+
+            // Crear archivo temporal
+            val imageFile = File(imagesDir, fileName)
+
+            // Crear URI con FileProvider
+            val uri = FileProvider.getUriForFile(
+                context,
+                "${context.packageName}.fileprovider",
+                imageFile
+            )
+
+            AppLogger.i("URI creado con FileProvider: $uri", "MediaRepo")
+            uri
+        } catch (e: Exception) {
+            AppLogger.e("Error creando URI con FileProvider", e, "MediaRepo")
+            null
         }
     }
 

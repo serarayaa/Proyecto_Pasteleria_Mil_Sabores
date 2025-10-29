@@ -60,10 +60,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.text.KeyboardActions
 import cl.duoc.milsabores.ui.theme.CaramelGold
 import cl.duoc.milsabores.ui.theme.ChocolateBrown
 import cl.duoc.milsabores.ui.theme.GradientPink
@@ -77,7 +81,8 @@ import java.util.Locale
 @Composable
 fun CarritoScreen(
     vm: CarritoViewModel,
-    onPedidoCreado: () -> Unit = {}
+    onPedidoCreado: () -> Unit = {},
+    onNavigateToHome: () -> Unit = {}
 ) {
     val cartItemsState = vm.items.collectAsState()
     val cartItems = cartItemsState.value
@@ -184,7 +189,7 @@ fun CarritoScreen(
             }
         ) { padding ->
             if (cartItems.isEmpty()) {
-                EmptyCart(padding)
+                EmptyCart(padding, onNavigateToHome)
             } else {
                 Column(modifier = Modifier.fillMaxSize().padding(padding)) {
                     LazyColumn(
@@ -213,6 +218,8 @@ fun CarritoScreen(
                         enter = slideInHorizontally { it } + fadeIn(),
                         exit = slideOutHorizontally { it } + fadeOut()
                     ) {
+                        val focusManager = LocalFocusManager.current
+
                         Surface(shadowElevation = 8.dp, color = MaterialTheme.colorScheme.surface) {
                             Column(modifier = Modifier.fillMaxWidth().padding(20.dp)) {
 
@@ -228,6 +235,14 @@ fun CarritoScreen(
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = StrawberryRed,
                                         unfocusedBorderColor = ChocolateBrown.copy(alpha = 0.3f)
+                                    ),
+                                    keyboardOptions = KeyboardOptions.Default.copy(
+                                        imeAction = ImeAction.Done
+                                    ),
+                                    keyboardActions = KeyboardActions(
+                                        onDone = {
+                                            focusManager.clearFocus()
+                                        }
                                     )
                                 )
 
@@ -316,7 +331,7 @@ fun CarritoScreen(
 }
 
 @Composable
-private fun EmptyCart(padding: PaddingValues) {
+private fun EmptyCart(padding: PaddingValues, onNavigateToHome: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize().padding(padding).padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -337,7 +352,7 @@ private fun EmptyCart(padding: PaddingValues) {
         Text("Agrega productos desde la tienda", style = MaterialTheme.typography.bodyLarge, color = ChocolateBrown.copy(alpha = 0.6f), textAlign = TextAlign.Center)
         Spacer(Modifier.height(24.dp))
         Button(
-            onClick = { /* TODO: navegar a Home */ },
+            onClick = onNavigateToHome,
             modifier = Modifier.fillMaxWidth(0.7f).height(50.dp),
             colors = ButtonDefaults.buttonColors(containerColor = StrawberryRed),
             shape = RoundedCornerShape(25.dp)

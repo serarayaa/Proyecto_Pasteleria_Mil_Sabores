@@ -30,6 +30,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.Logout
 import androidx.compose.material.icons.filled.Cake
 import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Home
@@ -211,7 +212,7 @@ fun PrincipalScreen(
                         onDismissRequest = { expanded = false }
                     ) {
                         DropdownMenuItem(
-                            text = { Text("Perfil") },
+                            text = { Text("Mi Perfil") },
                             onClick = {
                                 expanded = false
                                 tabsNav.navigate("profile")
@@ -219,16 +220,36 @@ fun PrincipalScreen(
                             leadingIcon = { Icon(Icons.Outlined.Info, contentDescription = null) }
                         )
                         DropdownMenuItem(
+                            text = { Text("Mis Pedidos") },
+                            onClick = {
+                                expanded = false
+                                tabsNav.navigate(BottomItem.Pedidos.route) {
+                                    popUpTo(BottomItem.Home.route) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
+                            leadingIcon = { Icon(Icons.Outlined.ShoppingBag, contentDescription = null) }
+                        )
+                        DropdownMenuItem(
                             text = { Text("Configuración") },
-                            onClick = { expanded = false },
+                            onClick = {
+                                expanded = false
+                                tabsNav.navigate(BottomItem.More.route) {
+                                    popUpTo(BottomItem.Home.route) { saveState = true }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            },
                             leadingIcon = { Icon(Icons.Outlined.Settings, contentDescription = null) }
                         )
                         DropdownMenuItem(
-                            text = { Text("Logout") },
+                            text = { Text("Cerrar Sesión") },
                             onClick = {
                                 expanded = false
                                 vm.logout()
-                            }
+                            },
+                            leadingIcon = { Icon(Icons.AutoMirrored.Outlined.Logout, contentDescription = null) }
                         )
                     }
                 }
@@ -471,6 +492,12 @@ fun PrincipalScreen(
                             popUpTo(BottomItem.Home.route) { saveState = true }
                             launchSingleTop = true
                             restoreState = true
+                        }
+                    },
+                    onNavigateToHome = {
+                        tabsNav.navigate(BottomItem.Home.route) {
+                            popUpTo(BottomItem.Home.route) { inclusive = false }
+                            launchSingleTop = true
                         }
                     }
                 )

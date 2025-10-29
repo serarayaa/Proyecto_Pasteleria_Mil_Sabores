@@ -18,6 +18,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -355,28 +356,46 @@ private fun EmptyPedidosView(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Icon(
-            Icons.Default.ShoppingBag,
-            contentDescription = null,
-            modifier = Modifier.size(120.dp),
-            tint = ChocolateBrown.copy(alpha = 0.3f)
-        )
-        Spacer(Modifier.height(16.dp))
+        // Icono grande con Card
+        Card(
+            modifier = Modifier
+                .size(140.dp)
+                .shadow(12.dp, CircleShape),
+            shape = CircleShape,
+            colors = CardDefaults.cardColors(
+                containerColor = GradientPink.copy(alpha = 0.2f)
+            )
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    Icons.Default.ShoppingBag,
+                    contentDescription = null,
+                    modifier = Modifier.size(70.dp),
+                    tint = StrawberryRed.copy(alpha = 0.6f)
+                )
+            }
+        }
+
+        Spacer(Modifier.height(24.dp))
+
         Text(
             "No tienes pedidos aún",
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = ChocolateBrown
+            color = ChocolateBrown,
+            textAlign = TextAlign.Center
         )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            "¡Explora nuestros deliciosos productos!",
-            style = MaterialTheme.typography.bodyMedium,
-            color = ChocolateBrown.copy(alpha = 0.6f)
-        )
+
         Spacer(Modifier.height(12.dp))
-        TextButton(onClick = onVerProductos) {
-            Text("Ver productos", color = StrawberryRed, fontWeight = FontWeight.Bold)
-        }
+
+        Text(
+            "Tus pedidos aparecerán aquí una vez que realices tu primera compra",
+            style = MaterialTheme.typography.bodyLarge,
+            color = ChocolateBrown.copy(alpha = 0.6f),
+            textAlign = TextAlign.Center
+        )
     }
 }

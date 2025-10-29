@@ -38,6 +38,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duoc.milsabores.R
 import cl.duoc.milsabores.ui.theme.*
 import kotlinx.coroutines.delay
+import androidx.compose.ui.platform.LocalFocusManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +49,7 @@ fun LoginScreen(
 ) {
     val state by vm.ui.collectAsState()
     var visible by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
 
     LaunchedEffect(Unit) {
         delay(100)
