@@ -1,0 +1,23 @@
+# Android/Gradle
+.gradle/
+build/
+*/build/
+local.properties
+*.iml
+*.log
+captures/
+.externalNativeBuild/
+.cxx/
+
+# Android Studio
+.idea/
+.DS_Store
+
+# Firebase - NO subir claves sensibles
+google-services.json
+
+# Misc
+*.apk
+*.aab
+*.dex
+*.class
