@@ -1,4 +1,4 @@
-// app/src/main/java/cl/duoc/milsabores/service/PedidosObserverService.kt
+// app/src/main/java/cl/duoc/milsabores/cl.duoc.milsabores.service/PedidosObserverService.kt
 package cl.duoc.milsabores.service
 
 import android.content.Context

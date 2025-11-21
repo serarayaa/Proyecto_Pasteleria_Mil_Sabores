@@ -1,4 +1,4 @@
-// app/src/main/java/cl/duoc/milsabores/data/media/MediaRepository.kt
+// app/src/main/java/cl/duoc/milsabores/cl.duoc.milsabores.data/media/MediaRepository.kt
 package cl.duoc.milsabores.data.media
 
 import android.content.ContentUris

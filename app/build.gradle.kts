@@ -29,14 +29,17 @@ android {
         }
     }
 
-    // ✅ Recomendado para AGP/Compose recientes
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
+    kotlinOptions {
+        jvmTarget = "17"
+    }
 
-    buildFeatures { compose = true }
+    buildFeatures {
+        compose = true
+    }
 }
 
 dependencies {
@@ -54,7 +57,6 @@ dependencies {
 
     // --- Navigation + animaciones ---
     implementation("androidx.navigation:navigation-compose:2.7.7")
-    // Accompanist para AnimatedNavHost (transiciones suaves)
     implementation("com.google.accompanist:accompanist-navigation-animation:0.34.0")
 
     // Corrutinas
@@ -77,12 +79,17 @@ dependencies {
     // --- DataStore (preferencias / sesión / tema) ---
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
-    // --- Firebase (usa solo BOM; evita duplicar auth con versión fija) ---
+    // --- Firebase (BOM) ---
     implementation(platform("com.google.firebase:firebase-bom:33.2.0"))
     implementation("com.google.firebase:firebase-analytics-ktx")
     implementation("com.google.firebase:firebase-auth-ktx")
     implementation("com.google.firebase:firebase-firestore-ktx")
-    // implementation("com.google.firebase:firebase-messaging-ktx") // si luego usamos push
+    // implementation("com.google.firebase:firebase-messaging-ktx") // opcional
+
+    // --- Retrofit & networking ---
+    implementation("com.squareup.retrofit2:retrofit:2.9.0")
+    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
+    implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
     // Tests / tooling
     testImplementation(libs.junit)

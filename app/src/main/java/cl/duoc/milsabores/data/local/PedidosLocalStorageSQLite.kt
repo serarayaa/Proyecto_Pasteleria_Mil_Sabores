@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.map
  * Reemplaza el sistema anterior de SharedPreferences + JSON
  *
  * UBICACIÓN DE LA BASE DE DATOS:
- * /data/data/cl.duoc.milsabores/databases/mil_sabores_database.db
+ * /cl.duoc.milsabores.data/cl.duoc.milsabores.data/cl.duoc.milsabores/databases/mil_sabores_database.db
  */
 class PedidosLocalStorageSQLite(context: Context) {
 

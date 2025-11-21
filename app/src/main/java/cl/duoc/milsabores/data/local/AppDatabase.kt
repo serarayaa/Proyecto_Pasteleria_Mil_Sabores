@@ -8,7 +8,7 @@ import cl.duoc.milsabores.data.local.dao.CarritoDao
 import cl.duoc.milsabores.data.local.dao.PedidoDao
 import cl.duoc.milsabores.data.local.entity.CarritoItemEntity
 import cl.duoc.milsabores.data.local.entity.PedidoEntity
-// RecordatorioEntity está en el mismo package cl.duoc.milsabores.data.local
+// RecordatorioEntity está en el mismo package cl.duoc.milsabores.cl.duoc.milsabores.data.local
 
 /**
  * Base de datos SQLite local usando Room

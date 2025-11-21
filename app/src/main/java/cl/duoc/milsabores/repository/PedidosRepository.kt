@@ -1,4 +1,4 @@
-// app/src/main/java/cl/duoc/milsabores/repository/PedidosRepository.kt
+// app/src/main/java/cl/duoc/milsabores/cl.duoc.milsabores.repository/PedidosRepository.kt
 package cl.duoc.milsabores.repository
 
 import cl.duoc.milsabores.core.AppLogger

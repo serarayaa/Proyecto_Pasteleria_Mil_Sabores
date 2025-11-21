@@ -1,4 +1,4 @@
-// app/src/main/java/cl/duoc/milsabores/model/CarritoItem.kt
+// app/src/main/java/cl/duoc/milsabores/cl.duoc.milsabores.model/CarritoItem.kt
 package cl.duoc.milsabores.model
 
 data class CarritoItem(

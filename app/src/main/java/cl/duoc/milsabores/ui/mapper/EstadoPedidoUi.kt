@@ -1,4 +1,4 @@
-// app/src/main/java/cl/duoc/milsabores/ui/mapper/EstadoPedidoUi.kt
+// app/src/main/java/cl/duoc/milsabores/cl.duoc.milsabores.ui/mapper/EstadoPedidoUi.kt
 package cl.duoc.milsabores.ui.mapper
 
 import androidx.compose.ui.graphics.Color

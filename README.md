@@ -4,7 +4,7 @@
 [![Jetpack Compose](https://img.shields.io/badge/Jetpack%20Compose-1.5.4-green.svg)](https://developer.android.com/jetpack/compose)
 [![Firebase](https://img.shields.io/badge/Firebase-BOM%2032.7.0-orange.svg)](https://firebase.google.com/)
 [![Material3](https://img.shields.io/badge/Material3-1.1.2-blue.svg)](https://m3.material.io/)
-[![SQLite](https://img.shields.io/badge/SQLite-Room-blue.svg)](https://developer.android.com/training/data-storage/room)
+[![SQLite](https://img.shields.io/badge/SQLite-Room-blue.svg)](https://developer.android.com/training/cl.duoc.milsabores.data-storage/room)
 [![Gradle](https://img.shields.io/badge/Gradle-8.2.0-green.svg)](https://gradle.org/)
 [![MinSDK](https://img.shields.io/badge/MinSDK-26-brightgreen.svg)](https://developer.android.com/)
 [![TargetSDK](https://img.shields.io/badge/TargetSDK-34-brightgreen.svg)](https://developer.android.com/)
@@ -165,7 +165,7 @@ app/src/main/
 │   │   └── Result.kt
 │   │       └── Sealed class para manejo de resultados: Success<T>, Error, Loading
 │   │
-│   ├── 💾 data/
+│   ├── 💾 cl.duoc.milsabores.data/
 │   │   ├── local/
 │   │   │   ├── AppDatabase.kt ⭐ NUEVO
 │   │   │   │   └── Room Database: configuración global de SQLite
@@ -187,7 +187,7 @@ app/src/main/
 │   │       └── MediaRepository.kt
 │   │           └── Crea URIs con FileProvider para captura de cámara (compatible todos los dispositivos)
 │   │
-│   ├── 📊 model/
+│   ├── 📊 cl.duoc.milsabores.model/
 │   │   ├── CarritoItem.kt
 │   │   │   └── Data class: id, productoId, nombre, precio, cantidad, imagen, subtotal
 │   │   ├── EstadoPedido.kt
@@ -195,7 +195,7 @@ app/src/main/
 │   │   └── Pedido.kt
 │   │       └── Data class: id, uid, productos, total, estado, fecha, observaciones
 │   │
-│   ├── 🗄️ repository/
+│   ├── 🗄️ cl.duoc.milsabores.repository/
 │   │   ├── auth/
 │   │   │   └── AuthRepository.kt
 │   │   │       └── Operaciones Firebase Auth: login, register, logout, recoverPassword
@@ -206,13 +206,13 @@ app/src/main/
 │   │       └── PedidosRepository.kt
 │   │           └── CRUD híbrido (Firebase + SQLite): crear, obtener, actualizar, cancelar
 │   │
-│   ├── 🔔 service/
+│   ├── 🔔 cl.duoc.milsabores.service/
 │   │   ├── NotificationHelper.kt
 │   │   │   └── Crea y muestra notificaciones locales con canales (Android 8.0+)
 │   │   └── PedidosObserverService.kt
 │   │       └── Observa cambios en Firestore y notifica al usuario sobre estados de pedidos
 │   │
-│   ├── 🎨 ui/
+│   ├── 🎨 cl.duoc.milsabores.ui/
 │   │   ├── app/
 │   │   │   ├── AppNavHost.kt
 │   │   │   │   └── Navegación principal con AnimatedNavHost (transiciones animadas)
@@ -245,7 +245,7 @@ app/src/main/
 │   │   │   └── EstadoPedidoUi.kt
 │   │   │       └── Extension functions: color() mapea estados a colores vibrantes
 │   │   │
-│   │   ├── model/
+│   │   ├── cl.duoc.milsabores.model/
 │   │   │   ├── Producto.kt
 │   │   │   │   └── Data class UI: id, titulo, descripcion, precio, categoria, imagen
 │   │   │   ├── ProductosDemo.kt
@@ -354,7 +354,7 @@ app/src/main/
 │   │       └── FormatUtils.kt
 │   │           └── Funciones de formato: clp() para pesos chilenos ($1.234)
 │   │
-│   └── 🛠️ utils/
+│   └── 🛠️ cl.duoc.milsabores.utils/
 │       └── PermissionHelper.kt
 │           └── Helper para verificar y solicitar permisos (cámara, notificaciones)
 │
@@ -496,9 +496,9 @@ dependencies {
     // Jetpack Compose BOM (Bill of Materials)
     val composeBom = platform("androidx.compose:compose-bom:2023.10.01")
     implementation(composeBom)
-    implementation("androidx.compose.ui:ui")
-    implementation("androidx.compose.ui:ui-graphics")
-    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.cl.duoc.milsabores.ui:cl.duoc.milsabores.ui")
+    implementation("androidx.compose.cl.duoc.milsabores.ui:cl.duoc.milsabores.ui-graphics")
+    implementation("androidx.compose.cl.duoc.milsabores.ui:cl.duoc.milsabores.ui-tooling-preview")
     implementation("androidx.compose.material3:material3:1.1.2")
     implementation("androidx.compose.material:material-icons-extended")
 
@@ -530,9 +530,9 @@ dependencies {
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation(composeBom)
-    androidTestImplementation("androidx.compose.ui:ui-test-junit4")
-    debugImplementation("androidx.compose.ui:ui-tooling")
-    debugImplementation("androidx.compose.ui:ui-test-manifest")
+    androidTestImplementation("androidx.compose.cl.duoc.milsabores.ui:cl.duoc.milsabores.ui-test-junit4")
+    debugImplementation("androidx.compose.cl.duoc.milsabores.ui:cl.duoc.milsabores.ui-tooling")
+    debugImplementation("androidx.compose.cl.duoc.milsabores.ui:cl.duoc.milsabores.ui-test-manifest")
 }
 ```
 
@@ -606,7 +606,7 @@ dependencies {
             android:authorities="${applicationId}.fileprovider"
             android:exported="false"
             android:grantUriPermissions="true">
-            <meta-data
+            <meta-cl.duoc.milsabores.data
                 android:name="android.support.FILE_PROVIDER_PATHS"
                 android:resource="@xml/file_paths" />
         </provider>
@@ -702,7 +702,7 @@ android.nonTransitiveRClass=true
 
 #### **IE 2.2.1: Lógica de validación centralizada y desacoplada**
 - ✅ **ViewModels separados**: LoginViewModel, CarritoViewModel, PrincipalViewModel, PedidosViewModel
-- ✅ **Estados reactivos**: StateFlow con data classes (LoginUiState, CarritoUiState, PrincipalUiState)
+- ✅ **Estados reactivos**: StateFlow con cl.duoc.milsabores.data classes (LoginUiState, CarritoUiState, PrincipalUiState)
 - ✅ **Validación desacoplada**: Funciones privadas `validar()` en ViewModels, sin lógica en Composables
 - ✅ **Respuesta a cambios**: collectAsState() en UI, actualización automática al cambiar estado
 - 📂 **Archivos clave**: `*ViewModel.kt`, `core/Result.kt`, estados en cada módulo UI
@@ -731,7 +731,7 @@ android.nonTransitiveRClass=true
 - ✅ **Singleton**: CarritoRepository.getInstance() para estado global del carrito
 - ✅ **Inyección manual**: ViewModelProvider.Factory para ViewModels con dependencias
 - ✅ **Git/GitHub**: Control de versiones con commits descriptivos, branches para features
-- 📂 **Archivos clave**: `repository/*`, `*ViewModel.kt`, estructura de carpetas modular
+- 📂 **Archivos clave**: `cl.duoc.milsabores.repository/*`, `*ViewModel.kt`, estructura de carpetas modular
 
 ---
 
@@ -792,7 +792,7 @@ cd Proyecto_Pasteleria_Mil_Sabores
 
 ```kotlin
 // Jetpack Compose
-implementation("androidx.compose.ui:ui:1.5.4")
+implementation("androidx.compose.cl.duoc.milsabores.ui:cl.duoc.milsabores.ui:1.5.4")
 implementation("androidx.compose.material3:material3:1.1.2")
 implementation("androidx.navigation:navigation-compose:2.7.5")
 

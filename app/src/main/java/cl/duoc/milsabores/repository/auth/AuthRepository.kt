@@ -1,4 +1,4 @@
-// app/src/main/java/cl/duoc/milsabores/repository/auth/AuthRepository.kt
+// app/src/main/java/cl/duoc/milsabores/cl.duoc.milsabores.repository/auth/AuthRepository.kt
 package cl.duoc.milsabores.repository.auth
 
 import cl.duoc.milsabores.core.AppLogger

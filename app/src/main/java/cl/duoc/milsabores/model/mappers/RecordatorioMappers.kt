@@ -1,4 +1,4 @@
-// app/src/main/java/cl/duoc/milsabores/model/mappers/RecordatorioMappers.kt
+// app/src/main/java/cl/duoc/milsabores/cl.duoc.milsabores.model/mappers/RecordatorioMappers.kt
 package cl.duoc.milsabores.model.mappers
 
 import cl.duoc.milsabores.data.local.RecordatorioEntity

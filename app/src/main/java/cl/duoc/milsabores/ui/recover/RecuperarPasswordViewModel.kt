@@ -1,4 +1,4 @@
-// app/src/main/java/cl/duoc/milsabores/ui/recover/RecuperarPasswordViewModel.kt
+// app/src/main/java/cl/duoc/milsabores/cl.duoc.milsabores.ui/recover/RecuperarPasswordViewModel.kt
 package cl.duoc.milsabores.ui.recover
 
 import android.util.Patterns

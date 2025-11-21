@@ -1,4 +1,4 @@
-// app/src/main/java/cl/duoc/milsabores/model/Pedido.kt
+// app/src/main/java/cl/duoc/milsabores/cl.duoc.milsabores.model/Pedido.kt
 package cl.duoc.milsabores.model
 
 data class Pedido(

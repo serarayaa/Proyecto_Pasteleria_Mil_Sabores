@@ -3,15 +3,13 @@ package cl.duoc.milsabores.ui.login
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cl.duoc.milsabores.data.remote.dto.UsuarioResponseDto
 import cl.duoc.milsabores.repository.auth.AuthRepository
-import cl.duoc.milsabores.ui.model.User
-import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
-import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
+import java.io.IOException
 
 data class LoginUiState(
     val email: String = "",
@@ -19,9 +17,9 @@ data class LoginUiState(
     val loading: Boolean = false,
     val error: String? = null,
     val loggedIn: Boolean = false,
-    val user: User? = null,
+    val usuario: UsuarioResponseDto? = null,
     val message: String? = null,
-    // Validaciones por campo
+    // Validaciones de campos
     val emailError: String? = null,
     val passwordError: String? = null
 )
@@ -33,10 +31,15 @@ class LoginViewModel(
     private val _ui = MutableStateFlow(LoginUiState())
     val ui: StateFlow<LoginUiState> = _ui
 
+    // ---------------------------------------
+    // ACTUALIZADORES DE CAMPOS
+    // ---------------------------------------
+
     fun onEmailChange(v: String) {
         val emailError = if (v.isNotEmpty() && !Patterns.EMAIL_ADDRESS.matcher(v).matches()) {
             "Email inválido"
         } else null
+
         _ui.update { it.copy(email = v, emailError = emailError, error = null, message = null) }
     }
 
@@ -44,6 +47,7 @@ class LoginViewModel(
         val passError = if (v.isNotEmpty() && v.length < 6) {
             "La clave debe tener al menos 6 caracteres"
         } else null
+
         _ui.update { it.copy(password = v, passwordError = passError, error = null, message = null) }
     }
 
@@ -54,38 +58,66 @@ class LoginViewModel(
         return null
     }
 
+    // ---------------------------------------
+    // SUBMIT → LOGIN VIA RETROFIT
+    // ---------------------------------------
+
     fun submit() {
         val err = validar()
         if (err != null) {
             _ui.update { it.copy(error = err) }
             return
         }
+
         viewModelScope.launch {
             _ui.update { it.copy(loading = true, error = null, message = null) }
+
             try {
-                android.util.Log.d("LoginViewModel", "Iniciando login para: ${_ui.value.email}")
-                val user = repo.login(_ui.value.email.trim(), _ui.value.password)
-                _ui.update {
-                    if (user != null) {
-                        android.util.Log.d("LoginViewModel", "Login exitoso para: ${user.email}")
-                        it.copy(loading = false, loggedIn = true, user = user, message = "Ingreso exitoso")
-                    } else {
-                        android.util.Log.e("LoginViewModel", "Login falló: usuario null")
-                        it.copy(loading = false, error = "Error al iniciar sesión")
+                val response = repo.login(
+                    _ui.value.email.trim(),
+                    _ui.value.password.trim()
+                )
+
+                if (response != null) {
+                    // Login exitoso
+                    _ui.update {
+                        it.copy(
+                            loading = false,
+                            loggedIn = true,
+                            usuario = response,
+                            message = "Ingreso exitoso"
+                        )
+                    }
+                } else {
+                    _ui.update {
+                        it.copy(
+                            loading = false,
+                            error = "Credenciales incorrectas"
+                        )
                     }
                 }
-            } catch (e: FirebaseAuthInvalidUserException) {
-                android.util.Log.e("LoginViewModel", "Usuario no existe: ${e.message}")
-                _ui.update { it.copy(loading = false, error = "Usuario no registrado. Verifica el correo: ${_ui.value.email.trim()}") }
-            } catch (e: FirebaseAuthInvalidCredentialsException) {
-                android.util.Log.e("LoginViewModel", "Credenciales incorrectas: ${e.message}")
-                _ui.update { it.copy(loading = false, error = "Contraseña incorrecta. Verifica tus datos.") }
+
+            } catch (io: IOException) {
+                _ui.update {
+                    it.copy(
+                        loading = false,
+                        error = "Error de conexión con el servidor"
+                    )
+                }
             } catch (e: Exception) {
-                android.util.Log.e("LoginViewModel", "Error desconocido: ${e.javaClass.simpleName} - ${e.message}", e)
-                _ui.update { it.copy(loading = false, error = "Error: ${e.message ?: "Conexión fallida"}") }
+                _ui.update {
+                    it.copy(
+                        loading = false,
+                        error = "Error inesperado: ${e.message}"
+                    )
+                }
             }
         }
     }
+
+    // ---------------------------------------
+    // LOGIN COMO INVITADO (SIN CAMBIOS)
+    // ---------------------------------------
 
     fun guestLogin() {
         viewModelScope.launch {
@@ -93,12 +125,20 @@ class LoginViewModel(
                 it.copy(
                     loading = false,
                     loggedIn = true,
-                    user = User(uid = "guest", email = "invitado@milsabores.cl"),
+                    usuario = UsuarioResponseDto(
+                        rut = "0-0",
+                        nombre = "Invitado",
+                        mail = "invitado@milsabores.cl",
+                        idrol = 0,
+                        idfirebase = null
+                    ),
                     message = "Sesión de invitado"
                 )
             }
         }
     }
 
-    fun messageConsumed() { _ui.update { it.copy(message = null) } }
+    fun messageConsumed() {
+        _ui.update { it.copy(message = null) }
+    }
 }

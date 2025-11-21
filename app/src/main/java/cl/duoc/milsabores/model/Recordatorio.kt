@@ -1,4 +1,4 @@
-// app/src/main/java/cl/duoc/milsabores/model/Recordatorio.kt
+// app/src/main/java/cl/duoc/milsabores/cl.duoc.milsabores.model/Recordatorio.kt
 package cl.duoc.milsabores.model
 
 /** Modelo de dominio para recordatorios (UI/ViewModel). */
