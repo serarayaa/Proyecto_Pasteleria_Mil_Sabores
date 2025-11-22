@@ -1,6 +1,13 @@
 package cl.duoc.milsabores.ui.login
 
-import androidx.compose.animation.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.ExperimentalAnimationApi
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -11,11 +18,18 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Login
-import androidx.compose.material.icons.filled.*
-import androidx.compose.material.icons.outlined.*
+import androidx.compose.material.icons.filled.Cake
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Error
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -23,6 +37,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -30,17 +45,21 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duoc.milsabores.R
-import cl.duoc.milsabores.ui.theme.*
+import cl.duoc.milsabores.ui.theme.CaramelGold
+import cl.duoc.milsabores.ui.theme.ChocolateBrown
+import cl.duoc.milsabores.ui.theme.GradientOrange
+import cl.duoc.milsabores.ui.theme.GradientPink
+import cl.duoc.milsabores.ui.theme.MintGreen
+import cl.duoc.milsabores.ui.theme.PastelPeach
+import cl.duoc.milsabores.ui.theme.StrawberryRed
+import cl.duoc.milsabores.ui.theme.VanillaWhite
 import kotlinx.coroutines.delay
-import androidx.compose.ui.platform.LocalFocusManager
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalAnimationApi::class)
 @Composable
 fun LoginScreen(
     onBack: () -> Unit,
@@ -51,15 +70,18 @@ fun LoginScreen(
     var visible by remember { mutableStateOf(false) }
     val focusManager = LocalFocusManager.current
 
+    // Animación inicial
     LaunchedEffect(Unit) {
         delay(100)
         visible = true
     }
 
+    // Navegar cuando loggedIn == true
     LaunchedEffect(state.loggedIn) {
         if (state.loggedIn) onLoginSuccess()
     }
 
+    // Snackbar
     val snackbarHostState = remember { SnackbarHostState() }
     LaunchedEffect(state.message) {
         state.message?.let {
@@ -131,6 +153,7 @@ fun LoginScreen(
             ) {
                 Spacer(Modifier.height(20.dp))
 
+                // Logo
                 AnimatedVisibility(
                     visible = visible,
                     enter = scaleIn(
@@ -162,6 +185,7 @@ fun LoginScreen(
 
                 Spacer(Modifier.height(24.dp))
 
+                // Título y subtítulo
                 AnimatedVisibility(
                     visible = visible,
                     enter = slideInVertically { -40 } + fadeIn(tween(500))
@@ -186,6 +210,7 @@ fun LoginScreen(
 
                 Spacer(Modifier.height(40.dp))
 
+                // Card con formulario
                 AnimatedVisibility(
                     visible = visible,
                     enter = slideInVertically { 40 } + fadeIn(tween(500, delayMillis = 200))
@@ -212,7 +237,11 @@ fun LoginScreen(
                                 label = { Text("Correo electrónico") },
                                 singleLine = true,
                                 leadingIcon = {
-                                    Icon(Icons.Outlined.Email, contentDescription = null, tint = StrawberryRed)
+                                    Icon(
+                                        Icons.Outlined.Email,
+                                        contentDescription = null,
+                                        tint = StrawberryRed
+                                    )
                                 },
                                 trailingIcon = {
                                     if (state.email.isNotEmpty()) {
@@ -226,7 +255,10 @@ fun LoginScreen(
                                 isError = state.email.isNotEmpty() && !emailValid,
                                 supportingText = {
                                     if (state.email.isNotEmpty() && !emailValid) {
-                                        Text("Ingresa un correo válido", color = MaterialTheme.colorScheme.error)
+                                        Text(
+                                            "Ingresa un correo válido",
+                                            color = MaterialTheme.colorScheme.error
+                                        )
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -252,13 +284,19 @@ fun LoginScreen(
                                 visualTransformation = if (passwordVisible)
                                     VisualTransformation.None else PasswordVisualTransformation(),
                                 leadingIcon = {
-                                    Icon(Icons.Outlined.Lock, contentDescription = null, tint = StrawberryRed)
+                                    Icon(
+                                        Icons.Outlined.Lock,
+                                        contentDescription = null,
+                                        tint = StrawberryRed
+                                    )
                                 },
                                 trailingIcon = {
                                     IconButton(
                                         onClick = { passwordVisible = !passwordVisible },
                                         modifier = Modifier.semantics {
-                                            contentDescription = if (passwordVisible) "Ocultar contraseña" else "Mostrar contraseña"
+                                            contentDescription =
+                                                if (passwordVisible) "Ocultar contraseña"
+                                                else "Mostrar contraseña"
                                         }
                                     ) {
                                         Icon(
@@ -272,7 +310,10 @@ fun LoginScreen(
                                 isError = state.password.isNotEmpty() && !passwordValid,
                                 supportingText = {
                                     if (state.password.isNotEmpty() && !passwordValid) {
-                                        Text("Mínimo 6 caracteres", color = MaterialTheme.colorScheme.error)
+                                        Text(
+                                            "Mínimo 6 caracteres",
+                                            color = MaterialTheme.colorScheme.error
+                                        )
                                     }
                                 },
                                 modifier = Modifier.fillMaxWidth(),
@@ -287,11 +328,15 @@ fun LoginScreen(
                                 ),
                                 keyboardActions = KeyboardActions(
                                     onDone = {
-                                        if (!state.loading && emailValid && passwordValid) vm.submit()
+                                        focusManager.clearFocus()
+                                        if (!state.loading && emailValid && passwordValid) {
+                                            vm.submit()
+                                        }
                                     }
                                 )
                             )
 
+                            // Error general
                             AnimatedVisibility(
                                 visible = state.error != null,
                                 enter = slideInVertically() + fadeIn(),
@@ -327,6 +372,7 @@ fun LoginScreen(
 
                             Spacer(Modifier.height(8.dp))
 
+                            // Botón principal
                             Button(
                                 onClick = vm::submit,
                                 enabled = !state.loading && emailValid && passwordValid,
@@ -348,7 +394,10 @@ fun LoginScreen(
                                         strokeWidth = 2.dp
                                     )
                                 } else {
-                                    Icon(Icons.AutoMirrored.Filled.Login, contentDescription = null)
+                                    Icon(
+                                        Icons.AutoMirrored.Filled.Login,
+                                        contentDescription = null
+                                    )
                                     Spacer(Modifier.width(8.dp))
                                     Text(
                                         "Ingresar",
@@ -358,7 +407,7 @@ fun LoginScreen(
                                 }
                             }
 
-                            // Botón de invitado bajo el botón principal
+                            // Botón invitado
                             TextButton(
                                 onClick = { vm.guestLogin() },
                                 enabled = !state.loading,
@@ -398,6 +447,7 @@ fun LoginScreen(
             }
         }
 
+        // Overlay de loading central
         AnimatedVisibility(
             visible = state.loading,
             modifier = Modifier.align(Alignment.Center),

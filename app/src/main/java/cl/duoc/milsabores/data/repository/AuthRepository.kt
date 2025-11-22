@@ -1,32 +1,35 @@
-package cl.duoc.milsabores.repository.auth
+package cl.duoc.milsabores.data.repository
 
+import cl.duoc.milsabores.data.remote.AuthApiService
 import cl.duoc.milsabores.data.remote.RetrofitClient
 import cl.duoc.milsabores.data.remote.dto.CrearUsuarioRequest
-import cl.duoc.milsabores.data.remote.dto.LoginRequest
 import cl.duoc.milsabores.data.remote.dto.UsuarioResponseDto
 
-class AuthRepository {
+class AuthRepository(
+    private val api: AuthApiService = RetrofitClient.authApi
+) {
 
-    private val api = RetrofitClient.authApi
-
-    suspend fun login(mail: String, password: String): UsuarioResponseDto? {
-        val response = api.login(LoginRequest(mail, password))
+    // LOGIN → devuelve usuario o null si fallo
+    suspend fun login(email: String, password: String): UsuarioResponseDto? {
+        val response = api.login(email, password)
         return if (response.isSuccessful) response.body() else null
     }
 
+    // REGISTRO
     suspend fun registrar(req: CrearUsuarioRequest): UsuarioResponseDto? {
         val response = api.crearUsuario(req)
         return if (response.isSuccessful) response.body() else null
     }
 
-    suspend fun cargarPorFirebase(idFirebase: String): UsuarioResponseDto? {
-        val response = api.buscarPorFirebase(idFirebase)
+    // CARGAR USUARIO POR ID FIREBASE
+    suspend fun cargarPorFirebase(uid: String): UsuarioResponseDto? {
+        val response = api.buscarPorFirebase(uid)
         return if (response.isSuccessful) response.body() else null
     }
 
+    // ACTUALIZAR NOMBRE
     suspend fun actualizarNombre(rut: String, nuevoNombre: String): UsuarioResponseDto? {
-        val body = mapOf("nuevoNombre" to nuevoNombre)
-        val response = api.actualizarNombre(rut, body)
+        val response = api.actualizarNombre(rut, nuevoNombre)
         return if (response.isSuccessful) response.body() else null
     }
 }

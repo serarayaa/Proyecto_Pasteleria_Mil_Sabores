@@ -1,18 +1,27 @@
-package cl.milsabores.movil.data.remote
+package cl.duoc.milsabores.data.remote
 
+import okhttp3.OkHttpClient
+import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
 
-    private const val BASE_URL = "http://10.0.2.2:8081"
-    // 10.0.2.2 => para acceder al localhost del PC desde el emulador
+    private const val BASE_URL = "http://10.0.2.2:8081/"   // Emulador → tu Auth-Service
 
-    val authApi: AuthApiService by lazy {
-        Retrofit.Builder()
-            .baseUrl(BASE_URL)
-            .addConverterFactory(GsonConverterFactory.create())
-            .build()
-            .create(AuthApiService::class.java)
+    private val logging = HttpLoggingInterceptor().apply {
+        level = HttpLoggingInterceptor.Level.BODY
     }
+
+    private val client = OkHttpClient.Builder()
+        .addInterceptor(logging)
+        .build()
+
+    private val retrofit: Retrofit = Retrofit.Builder()
+        .baseUrl(BASE_URL)
+        .client(client)
+        .addConverterFactory(GsonConverterFactory.create())
+        .build()
+
+    val authApi: AuthApiService = retrofit.create(AuthApiService::class.java)
 }

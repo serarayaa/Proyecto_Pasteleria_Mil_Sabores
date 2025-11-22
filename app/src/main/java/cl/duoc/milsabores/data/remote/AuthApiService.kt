@@ -1,40 +1,47 @@
-package cl.milsabores.movil.data.remote
+package cl.duoc.milsabores.data.remote
 
-import cl.milsabores.movil.data.remote.dto.LoginRequest
-import cl.milsabores.movil.data.remote.dto.CrearUsuarioRequest
-import cl.milsabores.movil.data.remote.dto.UsuarioResponseDto
+import cl.duoc.milsabores.data.remote.dto.CrearUsuarioRequest
+import cl.duoc.milsabores.data.remote.dto.LoginRequest
+import cl.duoc.milsabores.data.remote.dto.UsuarioResponseDto
 import okhttp3.MultipartBody
-import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.*
 
 interface AuthApiService {
 
-    @POST("/api/usuarios")
+    // Crear usuario (registro)
+    @POST("api/usuarios")
     suspend fun crearUsuario(
-        @Body body: CrearUsuarioRequest
+        @Body req: CrearUsuarioRequest
     ): Response<UsuarioResponseDto>
 
-    @POST("/api/usuarios/login")
+    // Login con email + password como form-data/query (como tu backend)
+    @FormUrlEncoded
+    @POST("api/auth/login")
     suspend fun login(
-        @Body req: LoginRequest
+        @Field("mail") mail: String,
+        @Field("password") password: String
     ): Response<UsuarioResponseDto>
 
-    @GET("/api/usuarios/firebase/{idFirebase}")
+    // Buscar usuario por idFirebase
+    @GET("api/usuarios/firebase/{idFirebase}")
     suspend fun buscarPorFirebase(
-        @Path("idFirebase") id: String
+        @Path("idFirebase") idFirebase: String
     ): Response<UsuarioResponseDto>
 
-    @PATCH("/api/usuarios/{rut}/nombre")
+    // Actualizar nombre
+    @FormUrlEncoded
+    @PATCH("api/usuarios/{rut}/nombre")
     suspend fun actualizarNombre(
         @Path("rut") rut: String,
-        @Body nombreMap: Map<String, String>
+        @Field("nuevoNombre") nuevoNombre: String
     ): Response<UsuarioResponseDto>
 
+    // Subir imagen
     @Multipart
-    @PATCH("/api/usuarios/{rut}/imagen")
+    @PATCH("api/usuarios/{rut}/imagen")
     suspend fun subirImagen(
         @Path("rut") rut: String,
-        @Part file: MultipartBody.Part
+        @Part imagen: MultipartBody.Part
     ): Response<UsuarioResponseDto>
 }
