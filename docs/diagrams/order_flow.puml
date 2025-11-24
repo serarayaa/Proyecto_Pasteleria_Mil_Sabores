@@ -1,0 +1,28 @@
+@startuml
+' Flujo de pedido - Pastelería Mil Sabores
+skinparam componentStyle rectangle
+
+actor Usuario
+participant UI
+participant VM
+participant Repo
+participant Room
+participant Firestore
+
+Usuario -> UI : Añadir producto al carrito
+UI -> VM : onAddToCart(product)
+VM -> Repo : addProductToCart(product)
+Repo -> Room : insert/update CarritoItem
+Repo -> VM : cartUpdated
+VM -> UI : mostrar snackbar / badge
+
+Usuario -> UI : Confirmar pedido
+UI -> VM : checkout()
+VM -> Repo : createOrder(localData)
+Repo -> Room : save PedidoEntity
+Repo -> Firestore : push Pedido
+Firestore -> Repo : confirm
+Repo -> VM : orderConfirmed
+VM -> UI : mostrar pantalla de éxito
+
+@enduml
