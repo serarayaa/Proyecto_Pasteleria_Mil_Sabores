@@ -7,15 +7,15 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
 
-    // Emulador Android → localhost de tu PC
-    private const val AUTH_BASE_URL = "http://10.0.2.2:8085/"    // auth-service
-    private const val PRODUCT_BASE_URL = "http://10.0.2.2:8087/" // product-service
+    // Emulador Android -> tu notebook (localhost)
+    private const val AUTH_BASE_URL = "http://10.0.2.2:8085/"     // auth-service
+    private const val PRODUCT_BASE_URL = "http://10.0.2.2:8087/"  // product-service
 
     private val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
-    private val client: OkHttpClient = OkHttpClient.Builder()
+    private val client = OkHttpClient.Builder()
         .addInterceptor(logging)
         .build()
 
@@ -26,12 +26,11 @@ object RetrofitClient {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 
-    // APIs disponibles
-    val authApi: AuthApiService by lazy {
-        buildRetrofit(AUTH_BASE_URL).create(AuthApiService::class.java)
-    }
+    // Retrofit para cada microservicio
+    private val retrofitAuth: Retrofit = buildRetrofit(AUTH_BASE_URL)
+    private val retrofitProduct: Retrofit = buildRetrofit(PRODUCT_BASE_URL)
 
-    val productApi: ProductApiService by lazy {
-        buildRetrofit(PRODUCT_BASE_URL).create(ProductApiService::class.java)
-    }
+    // APIs públicas
+    val authApi: AuthApiService = retrofitAuth.create(AuthApiService::class.java)
+    val productApi: ProductApiService = retrofitProduct.create(ProductApiService::class.java)
 }
