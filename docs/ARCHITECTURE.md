@@ -1,152 +1,192 @@
-# Arquitectura y descripción de archivos — Pastelería Mil Sabores
-
-Este documento contiene descripciones detalladas y pedagógicas (máximo 2 líneas por archivo) de los archivos y carpetas relevantes del proyecto.
+# Arquitectura y guía técnica — Pastelería Mil Sabores
 
 Última actualización: 2025-11-24
 
--- Raíz del proyecto --
-- `build.gradle.kts` — Script Gradle raíz (Kotlin DSL) que configura repositorios y plugins del proyecto.
-- `settings.gradle.kts` — Define los módulos del proyecto (incluye `:app`).
-- `gradle.properties` — Propiedades globales de Gradle (memoria JVM, AndroidX, estilo Kotlin).
-- `gradlew` — Ejecutable wrapper para ejecutar Gradle en Windows sin instalarlo globalmente.
-- `local.properties` — Ruta local del SDK y configuración específica de la máquina (no versionada).
-- `README.md` — Documentación principal del proyecto; contiene resumen y guía rápida.
+Este documento amplía y organiza la documentación técnica del proyecto, describiendo la arquitectura por capas, componentes clave, flujos principales de la aplicación, integración con Firebase/Retrofit/Room, y pasos prácticos para build, firma de APK y pruebas.
 
--- Módulo app --
-- `app/build.gradle.kts` — Script de build del módulo app; lista dependencias (Compose, Firebase, Room) y settings de Android.
-- `app/google-services.json` — Configuración de Firebase para la app; contiene project_id, api_key y mobileSDK id.
-- `app/proguard-rules.pro` — Reglas de ofuscación para builds de release con ProGuard/R8.
+Resumen de alto nivel
+---------------------
+Pastelería Mil Sabores es una app Android moderna construida con Jetpack Compose (UI declarativa). La arquitectura sigue un patrón por capas: UI (Compose + ViewModels) → Repositorios → Fuentes de datos (Remote: Retrofit / Firebase; Local: Room / SharedPreferences). Los servicios en background (p. ej. `PedidosObserverService`) permiten sincronizar y notificar cambios de pedidos.
 
--- Recursos (carpetas principales) --
-- `app/src/main/res/drawable/` — Imágenes y vectores usados en la UI (logos, placeholders).
-- `app/src/main/res/mipmap-*/` — Iconos de launcher en distintas densidades (hdpi, xhdpi, etc.).
-- `app/src/main/res/values/` — Valores XML: colores, strings y temas usados por la app.
-- `app/src/main/res/xml/file_paths.xml` — Configuración de `FileProvider` para compartir imágenes de la cámara.
+Diagrama y artefactos
+---------------------
+- Diagramas PlantUML:
+  - `docs/diagrams/architecture.puml` — visión por capas y dependencias.
+  - `docs/diagrams/order_flow.puml` — flujo de creación y observación de pedidos.
 
--- Manifiesto y entrada --
-- `app/src/main/AndroidManifest.xml` — Declara actividades, permisos y providers (FileProvider) de la app.
-- `app/src/main/res/values/strings.xml` — Contiene `app_name` y otros strings estáticos.
+Carga: renderiza los `.puml` con PlantUML (en local o con extensiones del editor) para obtener imágenes PNG/SVG.
 
--- Código fuente (paquete principal: `cl.duoc.milsabores`) --
-- `MilSaboresApplication.kt` — Clase `Application` que inicializa servicios globales (ej. Firebase) al inicio.
-- `MainActivity.kt` — Activity principal que monta el `NavHost` y establece el tema de la app.
+Estructura por capas (explicación técnica)
+-----------------------------------------
+1) Capa de presentación (UI)
+- Paquetes principales: `ui.app`, `ui.home`, `ui/principal`, `ui/login`, `ui/register`, `ui/carrito`, `ui/pedidos`, `ui/profile`, `ui/settings`, `ui/recordatorio`.
+- Composición: Pantallas son Composables; cada pantalla tiene un ViewModel que expone estados (State / UiState) y flujos de eventos.
+- Navegación: `ui/app/AppNavHost.kt` y `ui/app/Routes.kt` definen rutas y animaciones entre destinos.
 
--- core --
-- `core/AppLogger.kt` — Utilidad central de logging para mensajes estructurados durante el desarrollo.
-- `core/Result.kt` — Clase sellada para representar estados de resultado (Success, Error, Loading).
+2) Capa de dominio / repositorios
+- `repository/*` y `data/*` contienen la lógica de negocio:
+  - Repositorios exponen métodos asincrónicos (suspend / Flow / LiveData) combinando fuentes locales y remotas.
+  - Ejemplos: `repository/PedidosRepository.kt`, `repository/CarritoRepository.kt`.
 
--- data/ (repositorios y acceso a datos) --
-- `data/repository/ProductRepository.kt` — Fuente de productos; orquesta fetch remoto y local según conexión.
-- `data/repository/AuthRepository.kt` — Encapsula operaciones de autenticación (login, registro, logout).
-- `data/remote/RetrofitClient.kt` — Configura Retrofit/OkHttp para consumir APIs REST externas.
-- `data/remote/ProductApiService.kt` — Interfaz Retrofit que define endpoints para obtener productos.
-- `data/remote/AuthApiService.kt` — Interfaz Retrofit para endpoints de autenticación (si se usa backend REST).
-- `data/remote/dto/ProductoDto.kt` — DTO que mapea la respuesta de producto desde el backend.
-- `data/remote/dto/CrearUsuarioRequest.kt` — DTO para enviar datos de creación de usuario a la API.
-- `data/remote/dto/LoginRequest.kt` — DTO con credenciales para login remoto.
-- `data/remote/dto/UsuarioResponseDto.kt` — DTO que representa la respuesta de usuario desde la API.
+3) Capa de datos (fuentes)
+- Remoto: `data/remote/RetrofitClient.kt`, servicios Retrofit (`ProductApiService`, `AuthApiService`) y DTOs en `data/remote/dto/`.
+- Local: Room (DAOs y entidades en `data/local/`), almacenamiento de archivo (fotos de perfil) y prefs (`data/local/Prefs.kt`).
+- Sincronización: `service/PedidosObserverService.kt` observa cambios en Firestore y actualiza el almacenamiento local / notifica al usuario.
 
--- data/local (Room / almacenamiento local) --
-- `data/local/AppDatabase.kt` — Configura la base de datos Room y expone DAOs.
-- `data/local/dao/PedidoDao.kt` — DAO para operaciones sobre entidades `Pedido` en la base local.
-- `data/local/dao/CarritoDao.kt` — DAO para CRUD de items del carrito en SQLite.
-- `data/local/entity/PedidoEntity.kt` — Entidad Room que representa un pedido almacenado localmente.
-- `data/local/entity/CarritoItemEntity.kt` — Entidad Room que representa un item en el carrito.
-- `data/local/CarritoLocalStorage.kt` — Implementación local del almacenamiento del carrito (CRUD simple).
-- `data/local/PedidosLocalStorageSQLite.kt` — Maneja persistencia de pedidos y sincronización con Firebase.
-- `data/local/ReminderDAO.kt` — DAO para recordatorios locales (si se implementan alarmas/recordatorios).
-- `data/local/RecordatorioEntity.kt` — Entidad que guarda recordatorios programados en la DB.
-- `data/local/ProfilePhotoManager.kt` — Gestiona guardado y carga de fotos de perfil en internal storage.
-- `data/local/Prefs.kt` — Abstracción para acceder a preferencias (modo oscuro, settings de usuario).
+4) Servicios y utilidades
+- Notificaciones: `notifications/NotificationHelper.kt` gestiona canales y envío de notificaciones.
+- Permisos y utilitarios: `utils/PermissionHelper.kt`, `ui/utils/Formatters.kt`, `utils/CLP.kt`.
 
--- data/carrito --
-- `data/carrito/CarritoRepository.kt` — Lógica del carrito (añadir, actualizar cantidad, eliminar, totales).
-- `data/carrito/CarritoItemCard.kt` — Componente de datos/UI para representar un item del carrito.
+Componentes clave y responsabilidades
+------------------------------------
+- `MilSaboresApplication.kt` — Inicializa SDKs y configuraciones globales (Firebase, DI inicial si aplica).
+- `MainActivity.kt` — Punto de entrada UI; monta `AppNavHost` y aplica tema.
+- ViewModels — Contienen lógica de UI y llaman a repositorios. Deben ser fácilmente testeables (inyectar repositorios/depMocks).
+- Repositories — Encapsulan reglas de negocio y orquestan fuentes de datos.
+- DAOs/Room — Persistencia local con entidades `CarritoItemEntity`, `PedidoEntity`, `RecordatorioEntity`.
+- RetrofitClient — Configura OkHttp interceptors, logging y conversores (Moshi/Gson según configuración).
 
--- data/media --
-- `data/media/MediaRepository.kt` — Provee URIs con `FileProvider` para captura y manejo de imágenes.
+Flujos principales (resumen paso a paso)
+---------------------------------------
+1) Inicio / Login (LoginFlow)
+- UI: `LoginScreen.kt` recoge credenciales y notifica al `LoginViewModel`.
+- VM: valida campos, llama a `AuthRepository.login(email,password)`.
+- Repo: intenta autenticación con Firebase Auth o con backend REST (según configuración); en éxito actualiza `Prefs` y navega a `Principal`.
 
--- repository (capas de alto nivel) --
-- `repository/CarritoRepository.kt` — Repositorio que expone API para la UI usando `data` local/remote.
-- `repository/PedidosRepository.kt` — Orquesta creación y consulta de pedidos (local + Firebase).
-- `repository/auth/RecordatorioRepository.kt` — Repositorio para manejar recordatorios (si aplica).
+2) Carga de catálogo (Product flow)
+- `PrincipalViewModel` solicita productos al `ProductRepository`.
+- `ProductRepository` decide: si hay cache/local disponible sirve desde Room o prefs; si no, hace llamada Retrofit (`ProductApiService`) y persiste datos en Room.
+- UI: `UiProductsCard` y listas muestran datos; skeletons (`SkeletonLoader.kt`) se muestran mientras carga.
 
--- model (clases de dominio) --
-- `model/Producto.kt` — Data class que representa un producto con título, precio, categoría e imagen.
-- `model/Pedido.kt` — Data class que contiene la estructura completa de un pedido.
-- `model/CarritoItem.kt` — Data class para items del carrito con subtotal calculado.
-- `model/Recordatorio.kt` — Modelo para recordatorios programados dentro de la app.
-- `model/user.kt` — Modelo de usuario con campos básicos (uid, email, displayName).
-- `model/mappers/RecordatorioMappers.kt` — Mappers para convertir entre entidades y modelos de UI.
+3) Carrito y checkout
+- Usuario agrega productos desde `PrincipalScreen` al carrito (llamadas a `CarritoRepository.addItem()`).
+- `CarritoRepository` persiste en `CarritoLocalStorage` (Room o SharedPreferences según implementación) y expone totales.
+- Finalizar compra crea un `Pedido` y lo envía a `PedidosRepository.crearPedido()`, que persiste local y crea/actualiza registro en Firestore.
 
--- ui (interfaz y pantallas) --
-- `ui/app/Routes.kt` — Define rutas/nombres de destino para la navegación entre pantallas.
-- `ui/app/AppNavHost.kt` — Contiene el `NavHost` animado que gestiona la navegación Compose.
+4) Observación y notificaciones de pedidos
+- `PedidosObserverService` escucha cambios en la colección de pedidos en Firestore.
+- Al detectar cambios relevantes (estado cambiado, pedido nuevo), actualiza la DB local y muestra notificación con `NotificationHelper`.
 
--- ui/home --
-- `ui/home/HomeScreen.kt` — Pantalla de inicio con botones de acceso (login, registro, invitado) y banner.
-- `ui/home/components/AnimatedLogo.kt` — Logo animado usado en el home para mejorar la entrada visual.
+Integración con Firebase (detalles)
+----------------------------------
+- `app/google-services.json` contiene la configuración del proyecto Firebase (Auth, Firestore, Analytics).
+- Usos principales:
+  - Firebase Authentication: login/registro (email/password y guest flows según implementación).
+  - Firestore: colección `pedidos` (estructura: idPedido, uidUsuario, items[], total, estado, timestamps).
+  - Firebase Analytics: eventos de compra y uso.
 
--- ui/login --
-- `ui/login/LoginScreen.kt` — UI de inicio de sesión con validaciones visuales en tiempo real.
-- `ui/login/LoginViewModel.kt` — Lógica de validación y llamadas a `AuthRepository` para login.
+Recomendaciones de diseño para seguridad y escalabilidad
+-------------------------------------------------------
+- No versionar keystore ni credenciales. Mantener `google-services.json` de desarrollo; para producción, usar variables de entorno o CI secrets.
+- Separar configuraciones por flavors (dev/staging/prod) si se integra con backend diferente.
+- Limitar exponiendo DTOs en la UI; usar mappers (`model/mappers/`) para convertir DTO → Domain → UI models.
 
--- ui/register --
-- `ui/register/RegistrarseScreen.kt` — Pantalla de registro con formulario de nombre, email y password.
-- `ui/register/RegistrarseViewModel.kt` — Lógica de registro, validaciones y manejo de estado.
+Detalles técnicos y ejemplos (cómo está configurado)
+--------------------------------------------------
+1) Retrofit
+- `RetrofitClient.kt` centraliza baseUrl, OkHttp (logging interceptor) y conversor JSON.
+- `ProductApiService` define endpoints: `GET /products`, `GET /products/{id}`, `POST /orders` (ejemplo).
+- Manejar errores: transformar HTTP exceptions a `core/Result` o a sealed types controlables por ViewModels.
 
--- ui/recover --
-- `ui/recover/RecuperarPasswordScreen.kt` — Pantalla para solicitar recuperación de contraseña por email.
-- `ui/recover/RecuperarPasswordViewModel.kt` — Ejecuta la lógica para enviar solicitud de recuperación.
+2) Room (persistencia local)
+- `AppDatabase.kt` define DB con DAOs: `CarritoDao`, `PedidoDao`, `ReminderDao`.
+- Entidades: `CarritoItemEntity`, `PedidoEntity`, `RecordatorioEntity`.
+- Migraciones: versionar la DB y agregar `Migration` cuando cambian esquemas.
 
--- ui/principal --
-- `ui/principal/PrincipalScreen.kt` — Pantalla principal con grid/lista de productos y bottom navigation.
-- `ui/principal/PrincipalViewModel.kt` — Orquesta carga de productos, filtros y manejo del carrito en UI.
-- `ui/principal/components/UiProductsCard.kt` — Componente UI para mostrar cada producto en la lista.
+3) Observabilidad y logging
+- `core/AppLogger.kt` provee logging centralizado; activar logging solo en buildTypes debug.
+- Usar Firebase Crashlytics (si se añade) para errores en producción.
 
--- ui/components (UI reutilizable) --
-- `ui/components/SkeletonLoader.kt` — Skeletons con shimmer para mostrar durante carga de contenidos.
-- `ui/components/AnimatedComponents.kt` — Pequeños componentes con animaciones reutilizables.
-- `ui/components/GradientComponents.kt` — Helpers para aplicar gradientes y estilos visuales.
-- `ui/components/ResponsiveComponents.kt` — Componentes que adaptan su layout según tamaño de pantalla.
+Build, firma y release (pasos prácticos)
+---------------------------------------
+Nota: no incluyas keystore en el repositorio. A continuación pasos seguros para generar y usar un keystore local para firmar el APK.
 
--- ui/carrito --
-- `ui/carrito/CarritoScreen.kt` — Pantalla del carrito con listado de items, totales y acciones de compra.
-- `ui/carrito/CarritoViewModel.kt` — Maneja el estado del carrito y operaciones (incrementar, finalizar).
+1) Generar keystore (local):
+- En PowerShell (ejemplo):
 
--- ui/pedidos --
-- `ui/pedidos/PedidosScreen.kt` — Lista de pedidos guardados con estados visuales y skeleton loaders.
-- `ui/pedidos/DetallePedidoScreen.kt` — Pantalla de detalle de pedido con timeline de estados.
-- `ui/pedidos/PedidosViewModel.kt` — Carga y gestión de pedidos (local + sincronización remota).
-- `ui/mapper/EstadoPedidoUi.kt` — Mapea estados de pedido a colores y etiquetas de UI.
+```powershell
+keytool -genkeypair -v -keystore release-keystore.jks -alias milsabores_alias -keyalg RSA -keysize 2048 -validity 10000
+```
 
--- ui/profile --
-- `ui/profile/ProfileScreen.kt` — Pantalla de perfil con foto, datos y botones para cambiar foto o cerrar sesión.
-- `ui/profile/ProfileViewModel.kt` — Lógica para subir/eliminar foto y actualizar datos de usuario.
+2) Configurar `app/build.gradle.kts` (ejemplo de signingConfigs):
+- Añade un `signingConfigs` con referencias a propiedades o variables de entorno (no literales).
+- En `gradle.properties` o en CI, define: `RELEASE_KEYSTORE_PASSWORD`, `RELEASE_KEY_ALIAS`, `RELEASE_KEY_PASSWORD`.
 
--- ui/settings --
-- `ui/settings/SettingsScreen.kt` — Pantalla de configuración (modo oscuro, versión, ayuda).
+3) Comandos para generar release firmado (PowerShell):
 
--- ui/recordatorio --
-- `ui/recordatorio/RecordatorioScreen.kt` — UI para ver y gestionar recordatorios programados.
-- `ui/recordatorio/RecordatorioViewModel.kt` — Lógica para crear y manejar recordatorios.
+```powershell
+# Limpia y compila el release firmado
+.\gradlew clean assembleRelease
+# Genera bundle o APK según configuración
+.\gradlew bundleRelease
+```
 
--- ui/utils y vmfactory --
-- `ui/utils/Formatters.kt` — Utilidades para formateo (p.ej. moneda CLP) y helpers UI.
-- `ui/utils/ResponsiveUtils.kt` — Funciones para cálculo de dimensiones responsive.
-- `ui/vmfactory/ProfileVMFactory.kt` — Factory para crear ViewModels con dependencias necesarias.
-- `ui/vmfactory/RecordatorioVMFactory.kt` — Factory para crear el ViewModel de recordatorios.
+4) Notas de seguridad:
+- Guarda `release-keystore.jks` en un lugar seguro (Vault o carpeta privada fuera del repo) y utiliza secrets en CI para firmas automáticas.
 
--- notifications & service --
-- `notifications/NotificationHelper.kt` — Crea y administra canales y notificaciones locales.
-- `service/PedidosObserverService.kt` — Servicio que escucha cambios en Firestore y notifica al usuario.
+Testing (unit & integration)
+----------------------------
+- Estructura recomendada:
+  - `app/src/test/` — pruebas unitarias para ViewModels y utilidades.
+  - `app/src/androidTest/` — pruebas instrumentadas para interacciones UI o Room.
 
--- utils (varios) --
-- `utils/PermissionHelper.kt` — Helpers para chequear y solicitar permisos runtime de Android.
-- `utils/CLP.kt` — Extensiones para formatear números a moneda chilena (CLP).
+- Recomendaciones específicas:
+  - Mockear `Repository` en pruebas de ViewModel con `kotlinx-coroutines-test`.
+  - Añadir pruebas para: validación de formularios (Login/Register), lógica de totales del carrito, creación de pedido y manejo de errores.
 
--- model mappers y DTOs --
-- `model/mappers/RecordatorioMappers.kt` — Funciones para convertir entre entidad y modelo de recordatorio.
+Ejemplo (pasos rápidos para crear pruebas de ViewModel):
+1. Añadir dependencias `testImplementation` para JUnit, MockK (o Mockito), kotest-assertions y kotlinx-coroutines-test.
+2. Crear un test para `LoginViewModel` que simule respuestas de `AuthRepository` y verifique cambios en `UiState`.
 
-Si quieres que amplíe alguna descripción o genere diagramas (UML/plantUML), dímelo y lo agrego.
+Integración continua (CI) — sugerencias
+--------------------------------------
+- Pipeline básico:
+  - step: checkout
+  - step: set up JDK 17 + Android SDK
+  - step: restore cache (Gradle)
+  - step: run `./gradlew lint test assembleDebug` (o `assembleRelease` con keystore en secrets)
+  - step: upload artifacts (APK/AAB) si se desea.
+- Usar secrets para keystore y variables Firebase (si aplica).
 
+Mapping con la entrega DSY1105 (Evaluación Parcial 4)
+----------------------------------------------------
+- Consumo de APIs externas: Implementado (Retrofit + DTOs).
+- Microservicios Spring Boot: No hay backend en este repo; repo frontend preparado para consumirlo.
+- Pruebas unitarias: Falta implementación de tests, se recomienda añadir.
+- Generación archivos APK firmados: Documentado; se requiere keystore local o en CI.
+- Documentación técnica: Documentación ampliada en `docs/` (este documento y `FILES_SUMMARY.md`).
+- Integración Firebase: Implementada (google-services.json + observer service).
+
+Guía rápida para desarrolladores (cómo correr la app localmente)
+--------------------------------------------------------------
+1) Prerrequisitos: JDK 17, Android SDK (platform-tools), Android Studio.
+2) Desde la raíz del proyecto (PowerShell):
+
+```powershell
+# Build y deploy en emulador o dispositivo conectado
+.\gradlew clean assembleDebug
+.\gradlew installDebug
+# Ejecuta lint y tests
+.\gradlew lint
+.\gradlew test
+```
+
+3) Para desarrollo con cambios en Firebase: reemplaza `app/google-services.json` por el del proyecto deseado.
+
+Problemas comunes y soluciones rápidas
+-------------------------------------
+- Error de versión de SDK: verifica `compileSdk` y `targetSdk` en `app/build.gradle.kts` y que el SDK esté instalado localmente.
+- Crash por permisos (cámara/archivo): revisar `AndroidManifest.xml` y pedir permisos en runtime mediante `PermissionHelper`.
+- Problemas de sincronización con Firestore: revisar reglas de seguridad y que `google-services.json` corresponda al proyecto.
+
+Siguientes pasos recomendados (prioritarios para entrega DSY1105)
+----------------------------------------------------------------
+1) Añadir pruebas unitarias para ViewModels críticos (Login, Principal, Carrito, Pedidos).
+2) Documentar o añadir un enlace al backend Spring Boot (endpoints y contratos) si existe.
+3) Configurar un pipeline CI básico para ejecutar tests y generar artefactos.
+4) Generar imágenes de los PlantUML y agregarlas a `docs/diagrams/` si quieres incluir visuales en la entrega.
+
+Contacto y referencias
+----------------------
+- Para cambios arquitectónicos (por ejemplo migrar a Clean Architecture o añadir DI con Hilt), propongo un plan de refactor por etapas.
+- Si quieres que implemente: (a) pruebas unitarias de ejemplo, (b) pipeline CI, o (c) imágenes PlantUML, dime cuál y lo implemento.
