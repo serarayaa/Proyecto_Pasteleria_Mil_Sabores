@@ -1,8 +1,8 @@
-// app/src/main/java/cl/duoc/milsabores/cl.duoc.milsabores.ui/cl.duoc.milsabores.model/Producto.kt
 package cl.duoc.milsabores.ui.model
 
 import androidx.annotation.DrawableRes
 import cl.duoc.milsabores.R
+import cl.duoc.milsabores.data.remote.dto.ProductoDto
 
 data class Producto(
     val id: Int,
@@ -13,6 +13,9 @@ data class Producto(
     val descripcion: String
 )
 
+/**
+ * Lista de respaldo local para casos en que el backend falle.
+ */
 val productosDemo = listOf(
     Producto(
         id = 1,
@@ -39,3 +42,43 @@ val productosDemo = listOf(
         descripcion = "Sabroso Pie de Limón con ingredientes de alta calidad."
     )
 )
+
+/**
+ * Mapea un ProductoDto del backend a un modelo de UI [Producto].
+ *
+ * Por ahora usamos imágenes locales según la categoría para no
+ * romper los composables que esperan un @DrawableRes.
+ */
+fun ProductoDto.toUiModel(): Producto {
+    val precioFormateado = formatearPrecioConSimbolo(precio)
+
+    val drawable = when (categoria.lowercase()) {
+        "pasteles" -> R.drawable.bombon_chocolate
+        "postres" -> R.drawable.torta_chocolate
+        "dulces" -> R.drawable.pie_limon
+        else -> R.drawable.torta_chocolate
+    }
+
+    return Producto(
+        id = (id ?: 0L).toInt(),
+        titulo = nombre,
+        precio = precioFormateado,
+        imagenRes = drawable,
+        categoria = categoria,
+        descripcion = descripcion
+    )
+}
+
+private fun formatearPrecioConSimbolo(precioBruto: String): String {
+    // Dejamos solo dígitos
+    val soloDigitos = precioBruto.filter { it.isDigit() }
+    if (soloDigitos.isEmpty()) return "$0"
+
+    // Agregamos puntos de miles
+    val conPuntos = soloDigitos.reversed()
+        .chunked(3)
+        .joinToString(".")
+        .reversed()
+
+    return "$$conPuntos"
+}

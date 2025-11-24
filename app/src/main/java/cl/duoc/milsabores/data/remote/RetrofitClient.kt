@@ -7,21 +7,31 @@ import retrofit2.converter.gson.GsonConverterFactory
 
 object RetrofitClient {
 
-    private const val BASE_URL = "http://10.0.2.2:8081/"   // Emulador → tu Auth-Service
+    // Emulador Android → localhost de tu PC
+    private const val AUTH_BASE_URL = "http://10.0.2.2:8085/"    // auth-service
+    private const val PRODUCT_BASE_URL = "http://10.0.2.2:8087/" // product-service
 
     private val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
-    private val client = OkHttpClient.Builder()
+    private val client: OkHttpClient = OkHttpClient.Builder()
         .addInterceptor(logging)
         .build()
 
-    private val retrofit: Retrofit = Retrofit.Builder()
-        .baseUrl(BASE_URL)
-        .client(client)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
+    private fun buildRetrofit(baseUrl: String): Retrofit =
+        Retrofit.Builder()
+            .baseUrl(baseUrl)
+            .client(client)
+            .addConverterFactory(GsonConverterFactory.create())
+            .build()
 
-    val authApi: AuthApiService = retrofit.create(AuthApiService::class.java)
+    // APIs disponibles
+    val authApi: AuthApiService by lazy {
+        buildRetrofit(AUTH_BASE_URL).create(AuthApiService::class.java)
+    }
+
+    val productApi: ProductApiService by lazy {
+        buildRetrofit(PRODUCT_BASE_URL).create(ProductApiService::class.java)
+    }
 }
