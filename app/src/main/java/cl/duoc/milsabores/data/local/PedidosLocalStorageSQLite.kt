@@ -4,6 +4,7 @@ import android.content.Context
 import cl.duoc.milsabores.core.AppLogger
 import cl.duoc.milsabores.data.local.entity.PedidoEntity
 import cl.duoc.milsabores.data.local.entity.ProductoPedido
+import cl.duoc.milsabores.data.repository.pedidos.IPedidosStorage
 import cl.duoc.milsabores.model.Pedido
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -11,14 +12,13 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 /**
- * 🆕 NUEVO: Gestión de almacenamiento local de pedidos usando SQLite (Room)
+ * Gestión de almacenamiento local de pedidos usando SQLite (Room)
  * Reemplaza el sistema anterior de SharedPreferences + JSON
- *
- * UBICACIÓN DE LA BASE DE DATOS:
- * /cl.duoc.milsabores.data/cl.duoc.milsabores.data/cl.duoc.milsabores/databases/mil_sabores_database.db
  */
-class PedidosLocalStorageSQLite(context: Context) {
+class PedidosLocalStorageSQLite(context: Context) : IPedidosStorage {
 
+    // AppDatabase está en el MISMO package cl.duoc.milsabores.data.local,
+    // por eso NO necesitamos import: se ve directo.
     private val database = AppDatabase.getDatabase(context)
     private val pedidoDao = database.pedidoDao()
     private val gson = Gson()
@@ -37,7 +37,7 @@ class PedidosLocalStorageSQLite(context: Context) {
     }
 
     /**
-     * Guardar múltiples pedidos en SQLite
+     * Guardar varios pedidos
      */
     suspend fun guardarPedidos(pedidos: List<Pedido>) {
         try {
@@ -45,7 +45,7 @@ class PedidosLocalStorageSQLite(context: Context) {
             pedidoDao.insertAll(entities)
             AppLogger.i("✅ ${pedidos.size} pedidos guardados en SQLite", "SQLite")
         } catch (e: Exception) {
-            AppLogger.e("❌ Error al guardar pedidos en SQLite", e, "SQLite")
+            AppLogger.e("Error al guardar lista de pedidos", e, "SQLite")
         }
     }
 
@@ -61,9 +61,10 @@ class PedidosLocalStorageSQLite(context: Context) {
 
     /**
      * Cargar pedidos de un usuario específico
+     * (cumple contrato de IPedidosStorage)
      */
-    fun cargarPedidosByUser(userId: String): Flow<List<Pedido>> {
-        return pedidoDao.getPedidosByUser(userId).map { entities ->
+    override fun cargarPedidosByUser(uid: String): Flow<List<Pedido>> {
+        return pedidoDao.getPedidosByUser(uid).map { entities ->
             entities.map { it.toPedido() }
         }
     }
@@ -94,8 +95,9 @@ class PedidosLocalStorageSQLite(context: Context) {
 
     /**
      * Eliminar un pedido específico por ID
+     * (cumple contrato de IPedidosStorage)
      */
-    suspend fun eliminarPedido(pedidoId: String) {
+    override suspend fun eliminarPedido(pedidoId: String) {
         try {
             val entity = pedidoDao.getPedidoById(pedidoId)
             if (entity != null) {
@@ -125,13 +127,11 @@ class PedidosLocalStorageSQLite(context: Context) {
     suspend fun limpiarPorUsuario(userId: String) {
         try {
             pedidoDao.deleteAllByUser(userId)
-            AppLogger.i("Pedidos del usuario $userId eliminados", "SQLite")
+            AppLogger.i("Pedidos del usuario $userId eliminados de SQLite", "SQLite")
         } catch (e: Exception) {
-            AppLogger.e("Error al limpiar pedidos del usuario", e, "SQLite")
+            AppLogger.e("Error al limpiar pedidos por usuario", e, "SQLite")
         }
     }
-
-    // ========== MAPPERS (Conversión entre Pedido y PedidoEntity) ==========
 
     /**
      * Convertir Pedido (modelo) a PedidoEntity (tabla SQLite)
@@ -191,4 +191,3 @@ class PedidosLocalStorageSQLite(context: Context) {
         )
     }
 }
-

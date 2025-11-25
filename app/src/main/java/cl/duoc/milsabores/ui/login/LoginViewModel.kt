@@ -1,6 +1,5 @@
 package cl.duoc.milsabores.ui.login
 
-import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cl.duoc.milsabores.data.remote.dto.UsuarioResponseDto
@@ -31,9 +30,9 @@ class LoginViewModel(
     private val _ui = MutableStateFlow(LoginUiState())
     val ui: StateFlow<LoginUiState> = _ui
 
-    // ========================
-    // Handlers de formulario
-    // ========================
+    // ========================================================
+    //  HANDLERS DE FORMULARIO
+    // ========================================================
 
     fun onEmailChange(value: String) {
         _ui.update {
@@ -57,9 +56,23 @@ class LoginViewModel(
         }
     }
 
-    // ========================
-    // Login SOLO con backend
-    // ========================
+    // ========================================================
+    //  VALIDACIONES (remplazo de Patterns.EMAIL_ADDRESS)
+    // ========================================================
+
+    private fun isEmailValid(email: String): Boolean {
+        // Regex simple y testeable en JVM
+        val emailRegex = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")
+        return email.isNotBlank() && emailRegex.matches(email)
+    }
+
+    private fun isPasswordValid(password: String): Boolean {
+        return password.length >= 6
+    }
+
+    // ========================================================
+    //  LOGIN BACKEND
+    // ========================================================
 
     fun login() {
         val current = ui.value
@@ -67,13 +80,16 @@ class LoginViewModel(
         var emailError: String? = null
         var passwordError: String? = null
 
-        if (!Patterns.EMAIL_ADDRESS.matcher(current.email).matches()) {
+        // Reemplazo directo de Patterns.EMAIL_ADDRESS
+        if (!isEmailValid(current.email)) {
             emailError = "Formato de correo inválido"
         }
-        if (current.password.length < 6) {
+
+        if (!isPasswordValid(current.password)) {
             passwordError = "La contraseña debe tener al menos 6 caracteres"
         }
 
+        // Manejo de errores de formato
         if (emailError != null || passwordError != null) {
             _ui.update {
                 it.copy(
@@ -84,11 +100,13 @@ class LoginViewModel(
             return
         }
 
+        // ========================================================
+        //  LOGIN REAL CONTRA EL BACKEND
+        // ========================================================
         viewModelScope.launch {
             _ui.update { it.copy(loading = true, error = null, message = null) }
 
             try {
-                // Login en tu microservicio auth-service
                 val backendUser = repository.login(current.email, current.password)
                     ?: throw Exception("Correo o contraseña incorrectos")
 
@@ -99,7 +117,6 @@ class LoginViewModel(
                         isGuest = false,
                         backendUser = backendUser,
                         error = null,
-                        // tu DTO tiene 'nombre' y 'mail', no 'email'
                         message = "Bienvenido ${backendUser.nombre ?: backendUser.mail}"
                     )
                 }
@@ -124,9 +141,9 @@ class LoginViewModel(
         if (!ui.value.loading) login()
     }
 
-    // ========================
-    // Login invitado
-    // ========================
+    // ========================================================
+    //  LOGIN INVITADO
+    // ========================================================
 
     fun guestLogin() {
         _ui.update {
@@ -147,9 +164,9 @@ class LoginViewModel(
         }
     }
 
-    // ========================
-    // Utilidad
-    // ========================
+    // ========================================================
+    //  UTILERÍA
+    // ========================================================
 
     fun messageConsumed() {
         _ui.update { it.copy(message = null, error = null) }

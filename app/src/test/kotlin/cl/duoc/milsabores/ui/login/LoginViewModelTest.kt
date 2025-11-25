@@ -1,14 +1,32 @@
-#!/usr/bin/env kotlin
-
 package cl.duoc.milsabores.ui.login
 
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.setMain
+import org.junit.After
 import org.junit.Assert.*
+import org.junit.Before
 import org.junit.Test
 
+@OptIn(ExperimentalCoroutinesApi::class)
 class LoginViewModelTest {
 
+    private val dispatcher = StandardTestDispatcher()
+
+    @Before
+    fun setup() {
+        Dispatchers.setMain(dispatcher)
+    }
+
+    @After
+    fun tearDown() {
+        Dispatchers.resetMain()
+    }
+
     @Test
-    fun `cuando el email es invalido se setea emailError y no se marca loggedIn`() {
+    fun `email invalido marca error`() {
         val vm = LoginViewModel()
         vm.onEmailChange("correo-malo")
         vm.onPasswordChange("123456")
@@ -21,7 +39,7 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun `cuando la password es muy corta se setea passwordError`() {
+    fun `password muy corta marca error`() {
         val vm = LoginViewModel()
         vm.onEmailChange("usuario@milsabores.cl")
         vm.onPasswordChange("123")
@@ -34,7 +52,7 @@ class LoginViewModelTest {
     }
 
     @Test
-    fun `cuando email y password son validos no deja errores de formato`() {
+    fun `email y password correctos no muestran errores de formato`() {
         val vm = LoginViewModel()
         vm.onEmailChange("usuario@milsabores.cl")
         vm.onPasswordChange("123456")

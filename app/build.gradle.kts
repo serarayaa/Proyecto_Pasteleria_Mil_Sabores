@@ -41,7 +41,6 @@ android {
         compose = true
     }
 
-    // 🔥 Faltaba esto
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"
     }
@@ -96,12 +95,25 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation("com.squareup.okhttp3:logging-interceptor:4.12.0")
 
-    // Test
-    testImplementation(libs.junit)
+    // ============================
+    // 📌 TEST UNITARIOS — IMPORTANTE
+    // ============================
+
+    // JUnit
+    testImplementation("junit:junit:4.13.2")
+
+    // Corrutinas para pruebas (NECESARIO para Dispatchers.Main)
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+
+    // Room testing
+    testImplementation("androidx.room:room-testing:$room_version")
+
+    // AndroidTest (NO confundir con UnitTest)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
+
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
 }
