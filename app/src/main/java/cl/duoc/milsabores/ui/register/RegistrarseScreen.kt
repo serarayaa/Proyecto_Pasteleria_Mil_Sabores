@@ -1,210 +1,196 @@
 package cl.duoc.milsabores.ui.register
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.outlined.CheckCircle
-import androidx.compose.material.icons.outlined.Email
-import androidx.compose.material.icons.outlined.Error
-import androidx.compose.material.icons.outlined.Lock
-import androidx.compose.material.icons.outlined.Visibility
-import androidx.compose.material.icons.outlined.VisibilityOff
-import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
-import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegistrarseScreen(
     onBack: () -> Unit,
     onRegistered: () -> Unit,
-    vm: RegistrarseViewModel = viewModel()
+    viewModel: RegistrarseViewModel = hiltViewModel()
 ) {
-    val ui = vm.ui.collectAsState().value
-    var passwordVisible by remember { mutableStateOf(false) }
-    var confirmVisible by remember { mutableStateOf(false) }
+    val ui by viewModel.ui.collectAsState()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        contentAlignment = Alignment.Center
-    ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "Crear cuenta nueva",
-                style = MaterialTheme.typography.titleLarge
+    // Cuando se registre con éxito, volvemos a Login (vía callback)
+    LaunchedEffect(ui.registered) {
+        if (ui.registered) {
+            viewModel.clearMessage()
+            onRegistered()
+        }
+    }
+
+    Scaffold(
+        topBar = {
+            SmallTopAppBar(
+                title = { Text("Crear cuenta nueva") },
+                navigationIcon = {
+                    IconButton(onClick = onBack) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Volver")
+                    }
+                }
             )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Campo Email con validación visual
-            val emailValid = ui.email.isNotEmpty() && android.util.Patterns.EMAIL_ADDRESS.matcher(ui.email).matches()
-            OutlinedTextField(
-                value = ui.email,
-                onValueChange = vm::onEmail,
-                label = { Text("Correo electrónico") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-                leadingIcon = { Icon(Icons.Outlined.Email, contentDescription = null) },
-                trailingIcon = {
-                    if (ui.email.isNotEmpty()) {
-                        Icon(
-                            if (emailValid) Icons.Outlined.CheckCircle else Icons.Outlined.Error,
-                            contentDescription = null,
-                            tint = if (emailValid) MaterialTheme.colorScheme.primary
-                                  else MaterialTheme.colorScheme.error
-                        )
-                    }
-                },
-                isError = ui.email.isNotEmpty() && !emailValid,
-                supportingText = {
-                    if (ui.email.isNotEmpty() && !emailValid) {
-                        Text("Ingresa un correo válido")
-                    }
-                },
-                enabled = !ui.loading,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Campo Contraseña
-            val passValid = ui.pass.length >= 6
-            OutlinedTextField(
-                value = ui.pass,
-                onValueChange = vm::onPass,
-                label = { Text("Contraseña") },
-                singleLine = true,
-                visualTransformation = if (passwordVisible) VisualTransformation.None
-                                      else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
-                trailingIcon = {
-                    IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                        Icon(
-                            if (passwordVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
-                            contentDescription = if (passwordVisible) "Ocultar" else "Mostrar"
-                        )
-                    }
-                },
-                isError = ui.pass.isNotEmpty() && !passValid,
-                supportingText = {
-                    if (ui.pass.isNotEmpty() && !passValid) {
-                        Text("Mínimo 6 caracteres")
-                    }
-                },
-                enabled = !ui.loading,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            // Campo Confirmar Contraseña
-            val confirmValid = ui.confirm.isNotEmpty() && ui.confirm == ui.pass
-            OutlinedTextField(
-                value = ui.confirm,
-                onValueChange = vm::onConfirm,
-                label = { Text("Confirmar contraseña") },
-                singleLine = true,
-                visualTransformation = if (confirmVisible) VisualTransformation.None
-                                      else PasswordVisualTransformation(),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
-                trailingIcon = {
-                    IconButton(onClick = { confirmVisible = !confirmVisible }) {
-                        Icon(
-                            if (confirmVisible) Icons.Outlined.Visibility else Icons.Outlined.VisibilityOff,
-                            contentDescription = if (confirmVisible) "Ocultar" else "Mostrar"
-                        )
-                    }
-                },
-                isError = ui.confirm.isNotEmpty() && !confirmValid,
-                supportingText = {
-                    if (ui.confirm.isNotEmpty() && !confirmValid) {
-                        Text("Las contraseñas no coinciden")
-                    } else if (ui.confirm.isNotEmpty() && confirmValid) {
-                        Text("✓ Las contraseñas coinciden", color = MaterialTheme.colorScheme.primary)
-                    }
-                },
-                enabled = !ui.loading,
-                modifier = Modifier.fillMaxWidth()
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Mensaje de error con animación
-            AnimatedVisibility(
-                visible = ui.error != null,
-                enter = slideInVertically() + fadeIn(),
-                exit = slideOutVertically() + fadeOut()
+        }
+    ) { paddingValues ->
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
+
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    text = ui.error ?: "",
-                    color = MaterialTheme.colorScheme.error,
+                    text = "Completa tus datos para registrarte en Pastelería Mil Sabores.",
                     style = MaterialTheme.typography.bodyMedium
                 )
-                Spacer(modifier = Modifier.height(8.dp))
-            }
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // Loading o botón con animación
-            AnimatedVisibility(
-                visible = ui.loading,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                CircularProgressIndicator()
-            }
-
-            AnimatedVisibility(
-                visible = !ui.loading,
-                enter = fadeIn(),
-                exit = fadeOut()
-            ) {
-                Button(
-                    onClick = vm::submit,
-                    enabled = emailValid && passValid && confirmValid,
+                // Nombre
+                OutlinedTextField(
+                    value = ui.nombre,
+                    onValueChange = viewModel::onNombreChange,
+                    label = { Text("Nombre completo") },
+                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                    singleLine = true,
                     modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Registrarse")
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // RUT (opcional)
+                OutlinedTextField(
+                    value = ui.rut,
+                    onValueChange = viewModel::onRutChange,
+                    label = { Text("RUT (opcional)") },
+                    leadingIcon = { Icon(Icons.Default.Person, contentDescription = null) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Fecha nacimiento
+                OutlinedTextField(
+                    value = ui.fechaNacimiento,
+                    onValueChange = viewModel::onFechaNacimientoChange,
+                    label = { Text("Fecha de nacimiento (dd-MM-aaaa)") },
+                    leadingIcon = { Icon(Icons.Default.CalendarMonth, contentDescription = null) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Email
+                OutlinedTextField(
+                    value = ui.email,
+                    onValueChange = viewModel::onEmailChange,
+                    label = { Text("Correo electrónico") },
+                    leadingIcon = { Icon(Icons.Default.Email, contentDescription = null) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Password
+                OutlinedTextField(
+                    value = ui.password,
+                    onValueChange = viewModel::onPasswordChange,
+                    label = { Text("Contraseña") },
+                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                // Confirm Password
+                OutlinedTextField(
+                    value = ui.confirmPassword,
+                    onValueChange = viewModel::onConfirmPasswordChange,
+                    label = { Text("Confirmar contraseña") },
+                    leadingIcon = { Icon(Icons.Default.Lock, contentDescription = null) },
+                    singleLine = true,
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth()
+                )
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Mensajes de error / éxito
+                ui.error?.let { error ->
+                    Text(
+                        text = error,
+                        color = MaterialTheme.colorScheme.error,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
+
+                ui.message?.let { msg ->
+                    Text(
+                        text = msg,
+                        color = MaterialTheme.colorScheme.primary,
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                // Botón Registrar
+                Button(
+                    onClick = { viewModel.submit() },
+                    enabled = !ui.loading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp)
+                ) {
+                    if (ui.loading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                    } else {
+                        Text("Registrarse")
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                TextButton(
+                    onClick = onBack
+                ) {
+                    Text("Ya tengo una cuenta, iniciar sesión")
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            TextButton(onClick = onBack) {
-                Text("Volver")
-            }
-
-            if (ui.registered) onRegistered()
         }
     }
 }

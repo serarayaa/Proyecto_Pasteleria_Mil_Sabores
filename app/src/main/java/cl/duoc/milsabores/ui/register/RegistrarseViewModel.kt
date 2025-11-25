@@ -1,157 +1,151 @@
 package cl.duoc.milsabores.ui.register
 
-import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthUserCollisionException
-import kotlinx.coroutines.delay
+import cl.duoc.milsabores.data.remote.dto.CrearUsuarioRequest
+import cl.duoc.milsabores.data.repository.AuthRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
+import java.time.LocalDate
+import java.time.Period
+import java.time.format.DateTimeFormatter
+import javax.inject.Inject
 
-data class RegisterUiState(
+data class RegistrarseUiState(
+    val rut: String = "",
+    val nombre: String = "",
+    val fechaNacimiento: String = "",   // formato: dd-MM-aaaa
     val email: String = "",
-    val pass: String = "",
-    val confirm: String = "",
+    val password: String = "",
+    val confirmPassword: String = "",
     val loading: Boolean = false,
-    val error: String? = null,          // para compatibilidad con la UI
-    val registered: Boolean = false,
-    // Validaciones por campo
-    val emailError: String? = null,
-    val passError: String? = null,
-    val confirmError: String? = null,
-    val message: String? = null         // por si quieres mostrar snackbar
+    val error: String? = null,
+    val message: String? = null,
+    val registered: Boolean = false
 )
 
-class RegistrarseViewModel(
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
+@HiltViewModel
+class RegistrarseViewModel @Inject constructor(
+    private val authRepository: AuthRepository
 ) : ViewModel() {
 
-    private val _ui = MutableStateFlow(RegisterUiState())
-    val ui: StateFlow<RegisterUiState> = _ui
+    private val _ui = MutableStateFlow(RegistrarseUiState())
+    val ui: StateFlow<RegistrarseUiState> = _ui.asStateFlow()
 
-    fun onEmail(v: String) {
-        val emailError = if (v.isNotEmpty() && !Patterns.EMAIL_ADDRESS.matcher(v).matches()) {
-            "Email inválido"
-        } else null
-        _ui.update {
-            it.copy(
-                email = v,
-                emailError = emailError,
-                error = null,
-                message = null,
-                registered = false
-            )
-        }
+    fun onRutChange(value: String) {
+        _ui.update { it.copy(rut = value, error = null) }
     }
 
-    fun onPass(v: String) {
-        val passError = if (v.isNotEmpty() && v.length < 6) {
-            "Clave de 6+ caracteres"
-        } else null
-        _ui.update {
-            it.copy(
-                pass = v,
-                passError = passError,
-                error = null,
-                message = null,
-                registered = false
-            )
-        }
+    fun onNombreChange(value: String) {
+        _ui.update { it.copy(nombre = value, error = null) }
     }
 
-    fun onConfirm(v: String) {
-        val confirmError = if (v.isNotEmpty() && v != _ui.value.pass) {
-            "Las claves no coinciden"
-        } else null
-        _ui.update {
-            it.copy(
-                confirm = v,
-                confirmError = confirmError,
-                error = null,
-                message = null,
-                registered = false
-            )
+    fun onFechaNacimientoChange(value: String) {
+        _ui.update { it.copy(fechaNacimiento = value, error = null) }
+    }
+
+    fun onEmailChange(value: String) {
+        _ui.update { it.copy(email = value, error = null) }
+    }
+
+    fun onPasswordChange(value: String) {
+        _ui.update { it.copy(password = value, error = null) }
+    }
+
+    fun onConfirmPasswordChange(value: String) {
+        _ui.update { it.copy(confirmPassword = value, error = null) }
+    }
+
+    private fun calcularEdad(fechaNacimiento: String): Int? {
+        if (fechaNacimiento.isBlank()) return null
+        return try {
+            val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
+            val fecha = LocalDate.parse(fechaNacimiento, formatter)
+            Period.between(fecha, LocalDate.now()).years
+        } catch (e: Exception) {
+            null
         }
     }
 
     fun submit() {
-        val s = _ui.value
+        val state = _ui.value
 
-        // Validaciones finales
-        when {
-            !Patterns.EMAIL_ADDRESS.matcher(s.email).matches() ->
-                _ui.update { it.copy(error = "Email inválido", message = "Email inválido") }
+        // Validaciones básicas
+        if (state.nombre.isBlank() ||
+            state.email.isBlank() ||
+            state.password.isBlank() ||
+            state.confirmPassword.isBlank() ||
+            state.fechaNacimiento.isBlank()
+        ) {
+            _ui.update { it.copy(error = "Completa todos los campos obligatorios.") }
+            return
+        }
 
-            s.pass.length < 6 ->
-                _ui.update { it.copy(error = "Clave de 6+ caracteres", message = "Clave de 6+ caracteres") }
+        if (!state.email.contains("@")) {
+            _ui.update { it.copy(error = "El correo electrónico no es válido.") }
+            return
+        }
 
-            s.pass != s.confirm ->
-                _ui.update { it.copy(error = "Las claves no coinciden", message = "Las claves no coinciden") }
+        if (state.password.length < 6) {
+            _ui.update { it.copy(error = "La contraseña debe tener al menos 6 caracteres.") }
+            return
+        }
 
-            else -> viewModelScope.launch {
-                _ui.update { it.copy(loading = true, error = null, message = null, registered = false) }
+        if (state.password != state.confirmPassword) {
+            _ui.update { it.copy(error = "Las contraseñas no coinciden.") }
+            return
+        }
 
-                try {
-                    // Registro REAL en FirebaseAuth
-                    createUserWithFirebase(s.email, s.pass)
+        val edad = calcularEdad(state.fechaNacimiento)
+        if (edad == null || edad < 0) {
+            _ui.update {
+                it.copy(
+                    error = "Fecha de nacimiento inválida. Usa el formato dd-MM-aaaa."
+                )
+            }
+            return
+        }
 
-                    // Pequeña pausa solo para efecto visual si quieres mantenerlo
-                    delay(300)
+        viewModelScope.launch {
+            _ui.update { it.copy(loading = true, error = null, message = null, registered = false) }
+            try {
+                val request = CrearUsuarioRequest(
+                    rut = if (state.rut.isBlank()) "SIN_RUT" else state.rut,
+                    nombre = state.nombre,
+                    mail = state.email,
+                    password = state.password,
+                    idrol = 2,                  // 2 = cliente / usuario normal
+                    idfirebase = null,
+                    fechaNacimiento = state.fechaNacimiento,
+                    edad = edad
+                )
 
-                    _ui.update {
-                        it.copy(
-                            loading = false,
-                            registered = true,
-                            error = null,
-                            message = "Cuenta creada correctamente"
-                        )
-                    }
-                } catch (e: Exception) {
-                    val readable = when (e) {
-                        is FirebaseAuthUserCollisionException ->
-                            "Este correo ya está registrado"
-                        else ->
-                            "Error al registrar: ${e.message ?: "intente nuevamente"}"
-                    }
+                // Llamada al backend (auth-service)
+                authRepository.registrar(request)
 
-                    _ui.update {
-                        it.copy(
-                            loading = false,
-                            registered = false,
-                            error = readable,
-                            message = readable
-                        )
-                    }
+                _ui.update {
+                    it.copy(
+                        loading = false,
+                        registered = true,
+                        message = "Cuenta creada correctamente."
+                    )
+                }
+            } catch (e: Exception) {
+                _ui.update {
+                    it.copy(
+                        loading = false,
+                        error = e.message ?: "No se pudo registrar el usuario."
+                    )
                 }
             }
         }
     }
 
-    fun messageConsumed() {
+    fun clearMessage() {
         _ui.update { it.copy(message = null, error = null) }
-    }
-
-    private suspend fun createUserWithFirebase(
-        email: String,
-        password: String
-    ) = suspendCancellableCoroutine { cont ->
-        auth.createUserWithEmailAndPassword(email, password)
-            .addOnCompleteListener { task ->
-                if (!cont.isActive) return@addOnCompleteListener
-
-                if (task.isSuccessful) {
-                    cont.resume(Unit)
-                } else {
-                    cont.resumeWithException(
-                        task.exception ?: Exception("Error desconocido al registrar")
-                    )
-                }
-            }
     }
 }
