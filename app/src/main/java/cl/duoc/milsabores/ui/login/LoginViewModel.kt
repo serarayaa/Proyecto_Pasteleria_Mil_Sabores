@@ -5,18 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cl.duoc.milsabores.data.remote.dto.UsuarioResponseDto
 import cl.duoc.milsabores.data.repository.AuthRepository
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
-import com.google.firebase.auth.FirebaseAuthInvalidUserException
-import com.google.firebase.auth.FirebaseUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
-import java.io.IOException
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
 data class LoginUiState(
     val email: String = "",
@@ -24,8 +16,8 @@ data class LoginUiState(
     val loading: Boolean = false,
     val emailError: String? = null,
     val passwordError: String? = null,
-    val error: String? = null,          // por compatibilidad si tu UI lo usa
-    val message: String? = null,        // para snackbars
+    val error: String? = null,
+    val message: String? = null,
     val loggedIn: Boolean = false,
     val isGuest: Boolean = false,
     val firebaseUid: String? = null,
@@ -33,7 +25,6 @@ data class LoginUiState(
 )
 
 class LoginViewModel(
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val repository: AuthRepository = AuthRepository()
 ) : ViewModel() {
 
@@ -67,7 +58,7 @@ class LoginViewModel(
     }
 
     // ========================
-    // Login principal
+    // Login SOLO con backend
     // ========================
 
     fun login() {
@@ -97,43 +88,29 @@ class LoginViewModel(
             _ui.update { it.copy(loading = true, error = null, message = null) }
 
             try {
-                // 1) Login REAL en Firebase (para que toda la app funcione)
-                val user = signInWithFirebase(current.email, current.password)
-
-                // 2) Llamada opcional al microservicio (para la rúbrica de integración)
-                val backendUser = try {
-                    repository.login(current.email, current.password)
-                } catch (io: IOException) {
-                    null  // problema de red → no rompemos el login
-                } catch (e: Exception) {
-                    null
-                }
+                // Login en tu microservicio auth-service
+                val backendUser = repository.login(current.email, current.password)
+                    ?: throw Exception("Correo o contraseña incorrectos")
 
                 _ui.update {
                     it.copy(
                         loading = false,
                         loggedIn = true,
                         isGuest = false,
-                        firebaseUid = user.uid,
                         backendUser = backendUser,
                         error = null,
-                        message = "Bienvenido ${backendUser?.nombre ?: (user.email ?: "usuario")}"
+                        // tu DTO tiene 'nombre' y 'mail', no 'email'
+                        message = "Bienvenido ${backendUser.nombre ?: backendUser.mail}"
                     )
                 }
+
             } catch (e: Exception) {
-                val readable = when (e) {
-                    is FirebaseAuthInvalidCredentialsException,
-                    is FirebaseAuthInvalidUserException ->
-                        "Correo o contraseña incorrectos"
-                    else ->
-                        "Error al iniciar sesión: ${e.message ?: "intente nuevamente"}"
-                }
+                val readable = e.message ?: "Error al iniciar sesión. Intenta nuevamente."
 
                 _ui.update {
                     it.copy(
                         loading = false,
                         loggedIn = false,
-                        firebaseUid = null,
                         backendUser = null,
                         error = readable,
                         message = readable
@@ -143,12 +120,8 @@ class LoginViewModel(
         }
     }
 
-    // 🔹 Función usada por la UI (LoginScreen)
-    //    Mantiene compatibilidad con onClick = vm::submit y onDone { vm.submit() }
     fun submit() {
-        if (!ui.value.loading) {
-            login()
-        }
+        if (!ui.value.loading) login()
     }
 
     // ========================
@@ -156,24 +129,21 @@ class LoginViewModel(
     // ========================
 
     fun guestLogin() {
-        viewModelScope.launch {
-            _ui.update {
-                it.copy(
-                    loading = false,
-                    loggedIn = true,
-                    isGuest = true,
-                    firebaseUid = null,
-                    backendUser = UsuarioResponseDto(
-                        rut = "GUEST",
-                        nombre = "Invitado",
-                        mail = "invitado@milsabores.cl",
-                        idrol = 0,
-                        idfirebase = null
-                    ),
-                    error = null,
-                    message = "Sesión de invitado"
-                )
-            }
+        _ui.update {
+            it.copy(
+                loading = false,
+                loggedIn = true,
+                isGuest = true,
+                backendUser = UsuarioResponseDto(
+                    rut = "GUEST",
+                    nombre = "Invitado",
+                    mail = "invitado@milsabores.cl",
+                    idrol = 0,
+                    idfirebase = null
+                ),
+                error = null,
+                message = "Sesión de invitado"
+            )
         }
     }
 
@@ -183,34 +153,5 @@ class LoginViewModel(
 
     fun messageConsumed() {
         _ui.update { it.copy(message = null, error = null) }
-    }
-
-    // ========================
-    // Helper privado
-    // ========================
-
-    private suspend fun signInWithFirebase(
-        email: String,
-        password: String
-    ): FirebaseUser = suspendCancellableCoroutine { cont ->
-        auth.signInWithEmailAndPassword(email, password)
-            .addOnCompleteListener { task ->
-                if (!cont.isActive) return@addOnCompleteListener
-
-                if (task.isSuccessful) {
-                    val user = task.result?.user
-                    if (user != null) {
-                        cont.resume(user)
-                    } else {
-                        cont.resumeWithException(
-                            IllegalStateException("Usuario Firebase nulo")
-                        )
-                    }
-                } else {
-                    cont.resumeWithException(
-                        task.exception ?: Exception("Error desconocido en FirebaseAuth")
-                    )
-                }
-            }
     }
 }
