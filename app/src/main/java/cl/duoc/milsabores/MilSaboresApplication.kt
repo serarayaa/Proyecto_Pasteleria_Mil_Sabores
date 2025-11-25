@@ -4,7 +4,9 @@ import android.app.Application
 import cl.duoc.milsabores.core.AppLogger
 import cl.duoc.milsabores.service.PedidosObserverService
 import com.google.firebase.FirebaseApp
+import dagger.hilt.android.HiltAndroidApp
 
+@HiltAndroidApp
 class MilSaboresApplication : Application() {
     override fun onCreate() {
         super.onCreate()
