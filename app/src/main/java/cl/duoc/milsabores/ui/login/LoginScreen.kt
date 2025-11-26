@@ -388,10 +388,10 @@ fun LoginScreen(
                                 )
                             ) {
                                 if (state.loading) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(24.dp),
-                                        color = Color.White,
-                                        strokeWidth = 2.dp
+                                    Text(
+                                        text = "Ingresando...",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold
                                     )
                                 } else {
                                     Icon(
@@ -447,7 +447,7 @@ fun LoginScreen(
             }
         }
 
-        // Overlay de loading central
+        // Overlay de loading central (sin CircularProgressIndicator)
         AnimatedVisibility(
             visible = state.loading,
             modifier = Modifier.align(Alignment.Center),
@@ -456,7 +456,7 @@ fun LoginScreen(
         ) {
             Card(
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(140.dp)
                     .shadow(8.dp, RoundedCornerShape(20.dp)),
                 shape = RoundedCornerShape(20.dp),
                 colors = CardDefaults.cardColors(containerColor = Color.White)
@@ -465,9 +465,13 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(
+                    Text(
+                        text = "Conectando\ncon el servidor...",
+                        textAlign = TextAlign.Center,
                         color = StrawberryRed,
-                        strokeWidth = 4.dp
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(8.dp)
                     )
                 }
             }

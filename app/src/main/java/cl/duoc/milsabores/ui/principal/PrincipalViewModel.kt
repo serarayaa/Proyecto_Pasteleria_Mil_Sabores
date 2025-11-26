@@ -8,7 +8,6 @@ import cl.duoc.milsabores.repository.CarritoRepository
 import cl.duoc.milsabores.ui.model.Producto
 import cl.duoc.milsabores.ui.model.productosDemo
 import cl.duoc.milsabores.ui.model.toUiModel
-import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -28,11 +27,11 @@ data class PrincipalUiState(
 
 class PrincipalViewModel(
     private val carritoRepo: CarritoRepository = CarritoRepository.getInstance(),
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val productRepo: ProductRepository = ProductRepository()
 ) : ViewModel() {
 
-    private val _ui = MutableStateFlow(PrincipalUiState(email = auth.currentUser?.email))
+    // De momento no tomamos correo desde Firebase; la UI ya maneja el null como "Usuario"
+    private val _ui = MutableStateFlow(PrincipalUiState(email = null))
     val ui: StateFlow<PrincipalUiState> = _ui.asStateFlow()
 
     // Productos y filtros
@@ -113,9 +112,7 @@ class PrincipalViewModel(
     }
 
     fun logout() {
-        viewModelScope.launch {
-            runCatching { auth.signOut() }
-            _ui.value = _ui.value.copy(loggedOut = true)
-        }
+        // Como ya no usamos FirebaseAuth aquí, solo marcamos el estado como deslogueado
+        _ui.value = _ui.value.copy(loggedOut = true)
     }
 }

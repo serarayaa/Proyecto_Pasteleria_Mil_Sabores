@@ -9,7 +9,6 @@ import cl.duoc.milsabores.model.Pedido
 import cl.duoc.milsabores.model.ProductoPedido
 import cl.duoc.milsabores.repository.CarritoRepository
 import cl.duoc.milsabores.data.local.PedidosLocalStorageSQLite
-import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +16,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-
 
 data class CarritoUiState(
     val procesandoPedido: Boolean = false,
@@ -32,7 +30,6 @@ class CarritoViewModel(
 ) : AndroidViewModel(application) {
 
     private val pedidosLocalStorage = PedidosLocalStorageSQLite(application)
-    private val auth = FirebaseAuth.getInstance()
 
     // Expuestos para la UI
     val items: StateFlow<List<CarritoItem>> = repo.items
@@ -113,7 +110,8 @@ class CarritoViewModel(
                     )
                 }
 
-                val uid = auth.currentUser?.uid ?: "usuario_local"
+                // IMPORTANTE: ya no usamos FirebaseAuth
+                val uid = "usuario_local"
 
                 val pedido = Pedido(
                     id = "",
