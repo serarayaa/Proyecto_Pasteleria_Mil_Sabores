@@ -3,12 +3,12 @@ package cl.duoc.milsabores.ui.carrito
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import cl.duoc.milsabores.data.local.PedidosLocalStorageSQLite
 import cl.duoc.milsabores.model.CarritoItem
 import cl.duoc.milsabores.model.EstadoPedido
 import cl.duoc.milsabores.model.Pedido
 import cl.duoc.milsabores.model.ProductoPedido
 import cl.duoc.milsabores.repository.CarritoRepository
-import cl.duoc.milsabores.data.local.PedidosLocalStorageSQLite
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -31,10 +31,11 @@ class CarritoViewModel(
 
     private val pedidosLocalStorage = PedidosLocalStorageSQLite(application)
 
-    // Expuestos para la UI
+    // Items del carrito expuestos a la UI
     val items: StateFlow<List<CarritoItem>> = repo.items
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // Total del carrito
     val total: StateFlow<Double> = repo.items
         .map { list -> list.sumOf { it.subtotal } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
@@ -110,7 +111,7 @@ class CarritoViewModel(
                     )
                 }
 
-                // IMPORTANTE: ya no usamos FirebaseAuth
+                // Usuario local (ya NO usamos FirebaseAuth aquí)
                 val uid = "usuario_local"
 
                 val pedido = Pedido(
@@ -129,7 +130,7 @@ class CarritoViewModel(
                 // Limpiar carrito
                 repo.limpiarCarrito()
 
-                // Actualizar estado
+                // Actualizar estado de UI
                 _uiState.value = _uiState.value.copy(
                     procesandoPedido = false,
                     pedidoCreado = true,

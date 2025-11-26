@@ -30,7 +30,7 @@ class PrincipalViewModel(
     private val productRepo: ProductRepository = ProductRepository()
 ) : ViewModel() {
 
-    // De momento no tomamos correo desde Firebase; la UI ya maneja el null como "Usuario"
+    // No usamos Firebase: email=null → la UI muestra "Usuario"
     private val _ui = MutableStateFlow(PrincipalUiState(email = null))
     val ui: StateFlow<PrincipalUiState> = _ui.asStateFlow()
 
@@ -45,14 +45,22 @@ class PrincipalViewModel(
         combine(_productos, _categoriaSel) { lista, cat ->
             if (cat.isNullOrBlank()) lista
             else lista.filter { it.categoria.equals(cat, ignoreCase = true) }
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            emptyList()
+        )
 
     val categorias: List<String>
         get() = _productos.value.map { it.categoria }.distinct()
 
     // Carrito
-    val cantidadCarrito: StateFlow<Int> = carritoRepo.cantidadTotal
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+    val cantidadCarrito: StateFlow<Int> =
+        carritoRepo.cantidadTotal.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            0
+        )
 
     init {
         cargarProductos()
@@ -60,22 +68,25 @@ class PrincipalViewModel(
 
     fun cargarProductos() {
         _ui.value = _ui.value.copy(loading = true, error = null)
+
         viewModelScope.launch {
             try {
-                // Intentamos primero desde el microservicio
+                // Intento con backend
                 val dtos = productRepo.obtenerProductosDisponibles()
                 val listaUi = dtos.map { it.toUiModel() }
                 _productos.value = listaUi
+
                 _ui.value = _ui.value.copy(loading = false)
+
             } catch (io: IOException) {
-                // Problemas de red → usamos respaldo local
+                // Sin conexión → productos demo
                 _productos.value = productosDemo
                 _ui.value = _ui.value.copy(
                     loading = false,
                     error = "No se pudo conectar al catálogo en línea. Se muestran productos de ejemplo."
                 )
             } catch (he: HttpException) {
-                // Error del backend → usamos respaldo local
+                // Backend responde error → productos demo
                 _productos.value = productosDemo
                 _ui.value = _ui.value.copy(
                     loading = false,
@@ -112,7 +123,6 @@ class PrincipalViewModel(
     }
 
     fun logout() {
-        // Como ya no usamos FirebaseAuth aquí, solo marcamos el estado como deslogueado
         _ui.value = _ui.value.copy(loggedOut = true)
     }
 }

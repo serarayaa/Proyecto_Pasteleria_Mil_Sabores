@@ -82,7 +82,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import cl.duoc.milsabores.data.media.MediaRepository
 import cl.duoc.milsabores.ui.principal.components.UiProductosCard
 import cl.duoc.milsabores.ui.profile.ProfileScreen
 import cl.duoc.milsabores.ui.profile.ProfileViewModel
@@ -92,7 +91,6 @@ import cl.duoc.milsabores.ui.theme.GradientPink
 import cl.duoc.milsabores.ui.theme.PastelPeach
 import cl.duoc.milsabores.ui.theme.StrawberryRed
 import cl.duoc.milsabores.ui.theme.VanillaWhite
-import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
 sealed class BottomItem(
@@ -125,7 +123,6 @@ private fun BottomBar(
         containerColor = if (isDarkMode) {
             androidx.compose.ui.graphics.Color(0xFF1A1A1A)
         } else {
-            // surfaceContainer no existe en tu versión → usamos surface
             MaterialTheme.colorScheme.surface
         },
         contentColor = if (isDarkMode) {
@@ -770,19 +767,9 @@ fun PrincipalScreen(
                 )
             }
 
+            // 👇 Perfil SIN Firebase en la factory
             composable("profile") {
-                val factory = remember {
-                    object : ViewModelProvider.Factory {
-                        @Suppress("UNCHECKED_CAST")
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            return ProfileViewModel(
-                                auth = FirebaseAuth.getInstance(),
-                                mediaRepo = MediaRepository()
-                            ) as T
-                        }
-                    }
-                }
-                val pvm: ProfileViewModel = viewModel(factory = factory)
+                val pvm: ProfileViewModel = viewModel()
                 ProfileScreen(pvm)
             }
         }
