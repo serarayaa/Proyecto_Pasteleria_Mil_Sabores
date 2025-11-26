@@ -21,13 +21,19 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.ShoppingBag
+import androidx.compose.material.icons.filled.Kitchen
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -129,7 +135,7 @@ fun PedidosScreen() {
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Icon(
-                            Icons.Default.ShoppingBag,
+                            Icons.Filled.ShoppingBag,
                             contentDescription = null,
                             tint = StrawberryRed,
                             modifier = Modifier.size(28.dp)
@@ -178,15 +184,23 @@ fun PedidosScreen() {
         ) {
             when {
                 state.loading -> {
-                    CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.Center)
-                    )
+                    // ✅ Quitamos CircularProgressIndicator para evitar el crash
+                    Column(
+                        modifier = Modifier.align(Alignment.Center),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "Cargando pedidos...",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = if (isDarkMode) Color(0xFFE8E8E8) else ChocolateBrown
+                        )
+                    }
                 }
 
                 state.pedidos.isEmpty() -> {
                     EmptyPedidosView(
                         modifier = Modifier.align(Alignment.Center),
-                        onVerProductos = { /* navegar a tienda */ }
+                        onVerProductos = { /* navegar a tienda si quieres más adelante */ }
                     )
                 }
 
@@ -294,10 +308,10 @@ private fun PedidoCard(
                     ) {
                         Icon(
                             when (pedido.estado) {
-                                EstadoPedido.PENDIENTE -> Icons.Default.Schedule
-                                EstadoPedido.EN_PREPARACION -> Icons.Default.Kitchen
-                                EstadoPedido.LISTO -> Icons.Default.CheckCircle
-                                EstadoPedido.ENTREGADO -> Icons.Default.Done
+                                EstadoPedido.PENDIENTE -> Icons.Filled.Schedule
+                                EstadoPedido.EN_PREPARACION -> Icons.Filled.Kitchen
+                                EstadoPedido.LISTO -> Icons.Filled.CheckCircle
+                                EstadoPedido.ENTREGADO -> Icons.Filled.Done
                             },
                             contentDescription = null,
                             tint = pedido.estado.color(),
@@ -385,7 +399,7 @@ private fun PedidoCard(
                             color = StrawberryRed
                         )
                         Icon(
-                            imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            imageVector = if (expanded) Icons.Filled.ExpandLess else Icons.Filled.ExpandMore,
                             contentDescription = null,
                             tint = StrawberryRed,
                             modifier = Modifier.size(20.dp)
@@ -407,7 +421,7 @@ private fun PedidoCard(
                         .padding(12.dp)
                 ) {
                     Icon(
-                        Icons.Default.Info,
+                        Icons.Filled.Info,
                         contentDescription = null,
                         tint = CaramelGold,
                         modifier = Modifier.size(20.dp)
@@ -473,7 +487,7 @@ private fun EmptyPedidosView(
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
-                    Icons.Default.ShoppingBag,
+                    Icons.Filled.ShoppingBag,
                     contentDescription = null,
                     modifier = Modifier.size(70.dp),
                     tint = StrawberryRed.copy(alpha = 0.6f)

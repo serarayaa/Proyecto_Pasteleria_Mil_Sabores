@@ -3,13 +3,12 @@ package cl.duoc.milsabores.ui.carrito
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import cl.duoc.milsabores.data.local.PedidosLocalStorageSQLite
 import cl.duoc.milsabores.model.CarritoItem
 import cl.duoc.milsabores.model.EstadoPedido
 import cl.duoc.milsabores.model.Pedido
 import cl.duoc.milsabores.model.ProductoPedido
 import cl.duoc.milsabores.repository.CarritoRepository
-import cl.duoc.milsabores.data.local.PedidosLocalStorageSQLite
-import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +16,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-
 
 data class CarritoUiState(
     val procesandoPedido: Boolean = false,
@@ -32,12 +30,12 @@ class CarritoViewModel(
 ) : AndroidViewModel(application) {
 
     private val pedidosLocalStorage = PedidosLocalStorageSQLite(application)
-    private val auth = FirebaseAuth.getInstance()
 
-    // Expuestos para la UI
+    // Items del carrito expuestos a la UI
     val items: StateFlow<List<CarritoItem>> = repo.items
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
+    // Total del carrito
     val total: StateFlow<Double> = repo.items
         .map { list -> list.sumOf { it.subtotal } }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0.0)
@@ -113,7 +111,8 @@ class CarritoViewModel(
                     )
                 }
 
-                val uid = auth.currentUser?.uid ?: "usuario_local"
+                // Usuario local (ya NO usamos FirebaseAuth aquí)
+                val uid = "usuario_local"
 
                 val pedido = Pedido(
                     id = "",
@@ -131,7 +130,7 @@ class CarritoViewModel(
                 // Limpiar carrito
                 repo.limpiarCarrito()
 
-                // Actualizar estado
+                // Actualizar estado de UI
                 _uiState.value = _uiState.value.copy(
                     procesandoPedido = false,
                     pedidoCreado = true,

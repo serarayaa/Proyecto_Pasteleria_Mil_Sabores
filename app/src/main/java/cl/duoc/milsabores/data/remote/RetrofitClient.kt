@@ -11,21 +11,36 @@ import java.util.concurrent.TimeUnit
 
 object RetrofitClient {
 
-    private const val AUTH_BASE_URL = "http://10.0.2.2:8085/"
-    private const val PRODUCT_BASE_URL = "http://10.0.2.2:8087/"
+    // ============================
+    //   BASE URL - AWS EC2
+    // ============================
+
+    private const val AUTH_BASE_URL = "http://3.236.240.163:8081/"
+    private const val PRODUCT_BASE_URL = "http://3.236.240.163:8082/"
     private const val WEATHER_BASE_URL = "https://api.open-meteo.com/v1/"
+
+    // ============================
+    // LOGGING
+    // ============================
 
     private val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
-    // Aquí irá token cuando ya tengamos el login funcionando
+    // ============================
+    //   INTERCEPTOR (TOKEN FUTURO)
+    // ============================
+
     private val authInterceptor = Interceptor { chain ->
         val request = chain.request().newBuilder()
-            // .addHeader("Authorization", "Bearer $token")
+            // Ej: .addHeader("Authorization", "Bearer $token")
             .build()
         chain.proceed(request)
     }
+
+    // ============================
+    //   OKHTTP CLIENT
+    // ============================
 
     private val client = OkHttpClient.Builder()
         .addInterceptor(logging)
@@ -35,6 +50,10 @@ object RetrofitClient {
         .writeTimeout(20, TimeUnit.SECONDS)
         .build()
 
+    // ============================
+    //   GENERAR INSTANCIAS RETROFIT
+    // ============================
+
     private fun buildRetrofit(baseUrl: String): Retrofit =
         Retrofit.Builder()
             .baseUrl(baseUrl)
@@ -42,6 +61,7 @@ object RetrofitClient {
             .addConverterFactory(GsonConverterFactory.create())
             .build()
 
+    // Servicios
     private val retrofitAuth = buildRetrofit(AUTH_BASE_URL)
     private val retrofitProduct = buildRetrofit(PRODUCT_BASE_URL)
     private val retrofitWeather = buildRetrofit(WEATHER_BASE_URL)
@@ -49,7 +69,9 @@ object RetrofitClient {
     val authApi: AuthApiService = retrofitAuth.create(AuthApiService::class.java)
     val productApi: ProductApiService = retrofitProduct.create(ProductApiService::class.java)
 
-    // ------------ API CLIMA (no se toca nada) -------------------
+    // ============================
+    //   API CLIMA (sin cambios)
+    // ============================
 
     interface WeatherApiService {
         @GET("forecast")

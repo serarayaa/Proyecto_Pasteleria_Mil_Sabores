@@ -38,17 +38,16 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duoc.milsabores.model.CarritoItem
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CarritoScreen(
+    vm: CarritoViewModel,              // 👈 AHORA ES OBLIGATORIO
     onBack: () -> Unit = {},
     onNavigateToHome: () -> Unit = {},
-    onPedidoCreado: () -> Unit = {},
-    vm: CarritoViewModel = viewModel()
+    onPedidoCreado: () -> Unit = {}
 ) {
     val items by vm.items.collectAsState()
     val total by vm.total.collectAsState()

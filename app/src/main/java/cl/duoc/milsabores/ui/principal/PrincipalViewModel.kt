@@ -8,7 +8,6 @@ import cl.duoc.milsabores.repository.CarritoRepository
 import cl.duoc.milsabores.ui.model.Producto
 import cl.duoc.milsabores.ui.model.productosDemo
 import cl.duoc.milsabores.ui.model.toUiModel
-import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -28,11 +27,11 @@ data class PrincipalUiState(
 
 class PrincipalViewModel(
     private val carritoRepo: CarritoRepository = CarritoRepository.getInstance(),
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val productRepo: ProductRepository = ProductRepository()
 ) : ViewModel() {
 
-    private val _ui = MutableStateFlow(PrincipalUiState(email = auth.currentUser?.email))
+    // No usamos Firebase: email=null → la UI muestra "Usuario"
+    private val _ui = MutableStateFlow(PrincipalUiState(email = null))
     val ui: StateFlow<PrincipalUiState> = _ui.asStateFlow()
 
     // Productos y filtros
@@ -46,14 +45,22 @@ class PrincipalViewModel(
         combine(_productos, _categoriaSel) { lista, cat ->
             if (cat.isNullOrBlank()) lista
             else lista.filter { it.categoria.equals(cat, ignoreCase = true) }
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+        }.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            emptyList()
+        )
 
     val categorias: List<String>
         get() = _productos.value.map { it.categoria }.distinct()
 
     // Carrito
-    val cantidadCarrito: StateFlow<Int> = carritoRepo.cantidadTotal
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), 0)
+    val cantidadCarrito: StateFlow<Int> =
+        carritoRepo.cantidadTotal.stateIn(
+            viewModelScope,
+            SharingStarted.WhileSubscribed(5000),
+            0
+        )
 
     init {
         cargarProductos()
@@ -61,22 +68,25 @@ class PrincipalViewModel(
 
     fun cargarProductos() {
         _ui.value = _ui.value.copy(loading = true, error = null)
+
         viewModelScope.launch {
             try {
-                // Intentamos primero desde el microservicio
+                // Intento con backend
                 val dtos = productRepo.obtenerProductosDisponibles()
                 val listaUi = dtos.map { it.toUiModel() }
                 _productos.value = listaUi
+
                 _ui.value = _ui.value.copy(loading = false)
+
             } catch (io: IOException) {
-                // Problemas de red → usamos respaldo local
+                // Sin conexión → productos demo
                 _productos.value = productosDemo
                 _ui.value = _ui.value.copy(
                     loading = false,
                     error = "No se pudo conectar al catálogo en línea. Se muestran productos de ejemplo."
                 )
             } catch (he: HttpException) {
-                // Error del backend → usamos respaldo local
+                // Backend responde error → productos demo
                 _productos.value = productosDemo
                 _ui.value = _ui.value.copy(
                     loading = false,
@@ -113,9 +123,6 @@ class PrincipalViewModel(
     }
 
     fun logout() {
-        viewModelScope.launch {
-            runCatching { auth.signOut() }
-            _ui.value = _ui.value.copy(loggedOut = true)
-        }
+        _ui.value = _ui.value.copy(loggedOut = true)
     }
 }

@@ -82,7 +82,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import cl.duoc.milsabores.data.media.MediaRepository
 import cl.duoc.milsabores.ui.principal.components.UiProductosCard
 import cl.duoc.milsabores.ui.profile.ProfileScreen
 import cl.duoc.milsabores.ui.profile.ProfileViewModel
@@ -92,7 +91,7 @@ import cl.duoc.milsabores.ui.theme.GradientPink
 import cl.duoc.milsabores.ui.theme.PastelPeach
 import cl.duoc.milsabores.ui.theme.StrawberryRed
 import cl.duoc.milsabores.ui.theme.VanillaWhite
-import com.google.firebase.auth.FirebaseAuth
+import cl.duoc.milsabores.ui.time.TimeViewModel
 import kotlinx.coroutines.launch
 
 sealed class BottomItem(
@@ -125,7 +124,6 @@ private fun BottomBar(
         containerColor = if (isDarkMode) {
             androidx.compose.ui.graphics.Color(0xFF1A1A1A)
         } else {
-            // surfaceContainer no existe en tu versión → usamos surface
             MaterialTheme.colorScheme.surface
         },
         contentColor = if (isDarkMode) {
@@ -251,6 +249,10 @@ fun PrincipalScreen(
     val categoriaSel by vm.categoriaSel.collectAsState()
     val productos by vm.productosFiltrados.collectAsState()
     val cantidadCarrito by vm.cantidadCarrito.collectAsState()
+
+    // 🔹 ViewModel de la API externa de hora
+    val timeVm: TimeViewModel = viewModel()
+    val horaChile by timeVm.horaChile.collectAsState()
 
     var expanded by remember { mutableStateOf(false) }
     val tabsNav = rememberNavController()
@@ -474,6 +476,23 @@ fun PrincipalScreen(
                                                 androidx.compose.ui.graphics.Color(0xFFB8B8B8)
                                             } else {
                                                 ChocolateBrown.copy(alpha = 0.7f)
+                                            }
+                                        )
+
+                                        // 🔹 Hora desde la API externa (siempre muestra algo)
+                                        Spacer(Modifier.height(4.dp))
+                                        Text(
+                                            text = if (horaChile != null) {
+                                                "⏰ Hora en Chile: $horaChile"
+                                            } else {
+                                                "⏰ Hora en Chile: cargando o sin conexión"
+                                            },
+                                            style = MaterialTheme.typography.bodySmall,
+                                            fontWeight = FontWeight.SemiBold,
+                                            color = if (isDarkMode) {
+                                                androidx.compose.ui.graphics.Color(0xFFB8B8B8)
+                                            } else {
+                                                ChocolateBrown
                                             }
                                         )
                                     }
@@ -770,19 +789,9 @@ fun PrincipalScreen(
                 )
             }
 
+            // Perfil sin factory especial (usa el ProfileViewModel por defecto)
             composable("profile") {
-                val factory = remember {
-                    object : ViewModelProvider.Factory {
-                        @Suppress("UNCHECKED_CAST")
-                        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                            return ProfileViewModel(
-                                auth = FirebaseAuth.getInstance(),
-                                mediaRepo = MediaRepository()
-                            ) as T
-                        }
-                    }
-                }
-                val pvm: ProfileViewModel = viewModel(factory = factory)
+                val pvm: ProfileViewModel = viewModel()
                 ProfileScreen(pvm)
             }
         }

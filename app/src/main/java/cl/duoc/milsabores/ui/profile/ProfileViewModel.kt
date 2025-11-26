@@ -6,7 +6,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cl.duoc.milsabores.data.local.ProfilePhotoManager
 import cl.duoc.milsabores.data.media.MediaRepository
-import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,26 +21,24 @@ data class ProfileUiState(
     val error: String? = null
 )
 
+/**
+ * Versión sin Firebase.
+ * Por ahora usamos un usuario "local" con datos de ejemplo.
+ * Más adelante, si quieres, podemos leer estos datos desde Prefs o desde el backend.
+ */
 class ProfileViewModel(
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val mediaRepo: MediaRepository = MediaRepository(),
     private val photoManager: ProfilePhotoManager? = null
 ) : ViewModel() {
 
-    private val _ui = MutableStateFlow(ProfileUiState())
+    private val _ui = MutableStateFlow(
+        ProfileUiState(
+            uid = "usuario_local",
+            email = "usuario@milsabores.cl",
+            displayName = "Usuario Mil Sabores"
+        )
+    )
     val ui: StateFlow<ProfileUiState> = _ui
-
-    init {
-        val u = auth.currentUser
-        _ui.update {
-            it.copy(
-                uid = u?.uid,
-                email = u?.email,
-                displayName = u?.displayName
-            )
-        }
-        // La carga inicial se hace desde la UI con refreshProfilePhoto(context)
-    }
 
     /** Recarga la foto guardada localmente (usa fallback si no hay inyección). */
     fun refreshProfilePhoto(context: Context) {

@@ -14,8 +14,8 @@ import cl.duoc.milsabores.core.AppLogger
 import cl.duoc.milsabores.data.local.Prefs
 import cl.duoc.milsabores.ui.app.AppNavHost
 import cl.duoc.milsabores.ui.theme.MilsaboresTheme
-import cl.duoc.milsabores.ui.principal.PrincipalScreen
 import cl.duoc.milsabores.utils.PermissionHelper
+import com.google.firebase.FirebaseApp   // ✅ IMPORTANTE
 
 class MainActivity : ComponentActivity() {
 
@@ -36,13 +36,18 @@ class MainActivity : ComponentActivity() {
             AppLogger.info("Iniciando aplicación Mil Sabores...")
             enableEdgeToEdge()
 
+            // ✅ INICIALIZAR FIREBASE ANTES DE USAR FirebaseAuth EN CUALQUIER VM
+            FirebaseApp.initializeApp(this)
+
             // ✅ Crear canal(es) de notificación una vez
             createNotificationChannel()
 
             // Solicitar permiso de notificaciones en Android 13+
             if (!PermissionHelper.hasNotificationPermission(this)) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    requestPermissionLauncher.launch(android.Manifest.permission.POST_NOTIFICATIONS)
+                    requestPermissionLauncher.launch(
+                        android.Manifest.permission.POST_NOTIFICATIONS
+                    )
                 }
             }
 
@@ -50,7 +55,7 @@ class MainActivity : ComponentActivity() {
                 val prefs = remember { Prefs(this) }
                 var dark by remember { mutableStateOf(prefs.darkMode) }
 
-                // Callback para aplicar modo oscuro en caliente
+                // Guardar preferencia de modo oscuro
                 LaunchedEffect(dark) {
                     prefs.darkMode = dark
                 }
