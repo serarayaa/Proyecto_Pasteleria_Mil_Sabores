@@ -1,0 +1,35 @@
+@startuml
+' Arquitectura de alto nivel - Pastelería Mil Sabores
+skinparam componentStyle rectangle
+
+package "App Android (Cliente)" {
+  [UI - Jetpack Compose] as UI
+  [ViewModels (MVVM)] as VM
+  [Repositories] as REPO
+}
+
+package "Persistencia Local" {
+  [Room Database] as ROOM
+}
+
+package "Servicios Remotos" {
+  [Firebase Auth] as AUTH
+  [Firestore] as FS
+  [Firebase Analytics] as ANALYTICS
+  [REST API (Retrofit)] as API
+}
+
+UI -down-> VM : estados / eventos
+VM -down-> REPO : llamadas de negocio
+REPO --> ROOM : lectura/escritura local
+REPO --> FS : sincronización pedidos
+REPO --> AUTH : login / registro
+REPO --> API : llamadas REST externas
+VM --> ANALYTICS : eventos
+
+note right of REPO
+  Carrito: Room (offline-first)
+  Pedidos: sync con Firestore
+end note
+
+@enduml

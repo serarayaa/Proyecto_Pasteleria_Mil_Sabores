@@ -43,8 +43,8 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -92,14 +92,11 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
     val ui by vm.ui.collectAsState()
     val context = LocalContext.current
 
-    // Detectar modo oscuro
     val isDarkMode = androidx.compose.foundation.isSystemInDarkTheme()
 
-    // Estados de animación
     var isVisible by remember { mutableStateOf(false) }
     var photoScale by remember { mutableStateOf(0.8f) }
 
-    // Activar animaciones al cargar
     LaunchedEffect(Unit) {
         delay(100)
         isVisible = true
@@ -107,7 +104,6 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
         photoScale = 1f
     }
 
-    // Animaciones
     val scaleAnimation by animateFloatAsState(
         targetValue = photoScale,
         animationSpec = spring(
@@ -117,35 +113,31 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
         label = "photo_scale"
     )
 
-    // Colores adaptativos con mejor contraste
     val surfaceColor = if (isDarkMode) {
-        Color(0xFF1E1E1E) // Gris muy oscuro
+        Color(0xFF1E1E1E)
     } else {
         Color.White
     }
 
     val textColor = if (isDarkMode) {
-        Color(0xFFE8E8E8) // Gris muy claro, casi blanco
+        Color(0xFFE8E8E8)
     } else {
         ChocolateBrown
     }
 
     val secondaryTextColor = if (isDarkMode) {
-        Color(0xFFB0B0B0) // Gris medio claro
+        Color(0xFFB0B0B0)
     } else {
         ChocolateBrown.copy(alpha = 0.7f)
     }
 
-    // Verificar si es usuario invitado
     val isGuest = ui.uid == "guest" || ui.email == "invitado@milsabores.cl"
 
-    // Si es invitado, mostrar pantalla restringida
     if (isGuest) {
         GuestRestrictedScreen()
         return
     }
 
-    // Carga/recarga inicial de la foto desde almacenamiento local
     LaunchedEffect(Unit) {
         vm.refreshProfilePhoto(context)
     }
@@ -153,7 +145,6 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
     var pendingUri by remember { mutableStateOf<android.net.Uri?>(null) }
     var showDeleteDialog by remember { mutableStateOf(false) }
 
-    // Verificar permiso de cámara al inicio
     val hasCameraPermission = remember {
         androidx.core.content.ContextCompat.checkSelfPermission(
             context,
@@ -162,7 +153,6 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
     }
     var permissionGranted by remember { mutableStateOf(hasCameraPermission) }
 
-    // 1) Tomar foto (declarado primero)
     val takePictureLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.TakePicture()
     ) { ok ->
@@ -184,7 +174,6 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
         }
     }
 
-    // 2) Permiso de cámara
     val cameraPermLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
@@ -192,7 +181,6 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
         if (!granted) {
             Toast.makeText(context, "Permiso de cámara requerido para tomar foto", Toast.LENGTH_SHORT).show()
         } else {
-            // Permiso concedido, intentar lanzar cámara
             try {
                 val dest = vm.createDestinationUriForCurrentUser(context)
                 if (dest == null) {
@@ -223,7 +211,6 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
                     takePictureLauncher.launch(dest)
                 }
             } else {
-                // Solicitar permiso
                 cameraPermLauncher.launch(Manifest.permission.CAMERA)
             }
         } catch (e: Exception) {
@@ -267,7 +254,7 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
                 .fillMaxSize()
                 .then(
                     if (isDarkMode) {
-                        Modifier.background(Color(0xFF121212)) // Negro profundo
+                        Modifier.background(Color(0xFF121212))
                     } else {
                         Modifier.background(
                             brush = Brush.verticalGradient(
@@ -285,7 +272,6 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // === FOTO DE PERFIL ===
             AnimatedVisibility(
                 visible = isVisible,
                 enter = fadeIn(tween(600)) + scaleIn(tween(600)),
@@ -298,7 +284,6 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
                         .scale(scaleAnimation),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Círculo de fondo con gradiente
                     Box(
                         modifier = Modifier
                             .size(160.dp)
@@ -331,7 +316,6 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
                                 contentScale = ContentScale.Crop
                             )
                         } else {
-                            // Ícono placeholder cuando no hay foto
                             Box(
                                 modifier = Modifier
                                     .size(156.dp)
@@ -359,7 +343,6 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
                         }
                     }
 
-                    // Botón de cámara flotante con animación de pulso
                     Box(
                         modifier = Modifier
                             .align(Alignment.BottomEnd)
@@ -402,7 +385,6 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // === INFORMACIÓN DE USUARIO ===
             AnimatedVisibility(
                 visible = isVisible,
                 enter = fadeIn(tween(800)) + slideInVertically(tween(800)) { it / 2 },
@@ -423,7 +405,6 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
                             .padding(24.dp),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        // Título de la sección
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             modifier = Modifier.padding(bottom = 8.dp)
@@ -443,7 +424,7 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
                             )
                         }
 
-                        HorizontalDivider(
+                        Divider(
                             thickness = 1.dp,
                             color = if (isDarkMode) {
                                 Color(0xFF404040)
@@ -476,7 +457,6 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // === BOTONES DE ACCIÓN ===
             AnimatedVisibility(
                 visible = isVisible,
                 enter = fadeIn(tween(1000)) + slideInVertically(tween(1000)) { it },
@@ -582,7 +562,6 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
                 }
             }
 
-            // === INDICADOR DE CARGA ===
             if (ui.isLoading) {
                 Spacer(modifier = Modifier.height(16.dp))
                 CircularProgressIndicator(
@@ -591,7 +570,6 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
                 )
             }
 
-            // === MENSAJES DE ERROR ===
             ui.error?.let {
                 Spacer(modifier = Modifier.height(16.dp))
                 Card(
@@ -614,7 +592,6 @@ fun ProfileScreen(vm: ProfileViewModel = viewModel()) {
         }
     }
 
-    // === DIALOG DE CONFIRMACIÓN ===
     if (showDeleteDialog) {
         AlertDialog(
             onDismissRequest = { showDeleteDialog = false },
@@ -738,7 +715,6 @@ private fun GuestRestrictedScreen() {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            // Icono grande de usuario invitado
             Card(
                 modifier = Modifier
                     .size(140.dp)
@@ -763,7 +739,6 @@ private fun GuestRestrictedScreen() {
 
             Spacer(Modifier.height(32.dp))
 
-            // Título
             Text(
                 "Modo Invitado",
                 style = MaterialTheme.typography.headlineMedium,
@@ -774,7 +749,6 @@ private fun GuestRestrictedScreen() {
 
             Spacer(Modifier.height(16.dp))
 
-            // Mensaje informativo
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -809,8 +783,8 @@ private fun GuestRestrictedScreen() {
 
                     Text(
                         "Como usuario invitado, tienes acceso limitado a la aplicación. " +
-                        "Para acceder a todas las funciones (cambiar foto de perfil, " +
-                        "guardar pedidos, etc.), necesitas crear una cuenta.",
+                                "Para acceder a todas las funciones (cambiar foto de perfil, " +
+                                "guardar pedidos, etc.), necesitas crear una cuenta.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = ChocolateBrown.copy(alpha = 0.8f),
                         textAlign = TextAlign.Center
@@ -820,7 +794,6 @@ private fun GuestRestrictedScreen() {
 
             Spacer(Modifier.height(24.dp))
 
-            // Características disponibles para invitados
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -846,7 +819,7 @@ private fun GuestRestrictedScreen() {
 
                     Spacer(Modifier.height(8.dp))
 
-                    HorizontalDivider(color = ChocolateBrown.copy(alpha = 0.1f))
+                    Divider(color = ChocolateBrown.copy(alpha = 0.1f))
 
                     Spacer(Modifier.height(8.dp))
 
@@ -867,7 +840,6 @@ private fun GuestRestrictedScreen() {
 
             Spacer(Modifier.height(24.dp))
 
-            // Mensaje motivacional
             Text(
                 "💡 Crea una cuenta para disfrutar de todas las funciones",
                 style = MaterialTheme.typography.bodyMedium,

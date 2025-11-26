@@ -3,6 +3,8 @@ package cl.duoc.milsabores.ui.pedidos
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import cl.duoc.milsabores.data.repository.auth.IAuthProvider
+import cl.duoc.milsabores.data.repository.pedidos.IPedidosStorage
 import cl.duoc.milsabores.model.Pedido
 import cl.duoc.milsabores.data.local.PedidosLocalStorageSQLite
 import com.google.firebase.auth.FirebaseAuth
@@ -19,16 +21,21 @@ data class PedidosUiState(
     val message: String? = null
 )
 
+/**
+ * ViewModel preparado tanto para ejecución real en Android como
+ * para pruebas unitarias en JVM (a través de inyección de dependencias).
+ */
 class PedidosViewModel(
-    application: Application? = null,
-    private val pedidosLocalStorage: PedidosLocalStorageSQLite? = null
-) : AndroidViewModel(application ?: throw IllegalArgumentException("Application required")) {
+    application: Application,
+    private val storage: IPedidosStorage = PedidosLocalStorageSQLite(application),
+    private val authProvider: IAuthProvider = object : IAuthProvider {
+        override val currentUid: String? =
+            FirebaseAuth.getInstance().currentUser?.uid
+    }
+) : AndroidViewModel(application) {
 
     private val _ui = MutableStateFlow(PedidosUiState())
     val ui: StateFlow<PedidosUiState> = _ui.asStateFlow()
-
-    private val storage = pedidosLocalStorage ?: PedidosLocalStorageSQLite(getApplication())
-    private val auth = FirebaseAuth.getInstance()
 
     init {
         observarPedidos()
@@ -37,15 +44,18 @@ class PedidosViewModel(
     private fun observarPedidos() {
         viewModelScope.launch {
             _ui.value = _ui.value.copy(loading = true, error = null)
+
             try {
-                val uid = auth.currentUser?.uid
+                val uid = authProvider.currentUid
+
                 if (uid == null) {
-                    // Usuario no autenticado: deja estado consistente
-                    _ui.value = _ui.value.copy(pedidos = emptyList(), loading = false)
+                    _ui.value = _ui.value.copy(
+                        pedidos = emptyList(),
+                        loading = false
+                    )
                     return@launch
                 }
 
-                // Usar Flow para observar cambios en tiempo real
                 storage.cargarPedidosByUser(uid).collect { pedidos ->
                     _ui.value = _ui.value.copy(
                         pedidos = pedidos.sortedByDescending { it.fecha },
@@ -53,6 +63,7 @@ class PedidosViewModel(
                         error = null
                     )
                 }
+
             } catch (e: Exception) {
                 _ui.value = _ui.value.copy(
                     loading = false,
@@ -73,19 +84,22 @@ class PedidosViewModel(
     fun cancelarPedido(pedidoId: String) {
         viewModelScope.launch {
             _ui.value = _ui.value.copy(loading = true, message = null)
+
             try {
                 storage.eliminarPedido(pedidoId)
+
                 _ui.value = _ui.value.copy(
                     loading = false,
                     pedidoSeleccionado = null,
                     message = "Pedido cancelado"
                 )
-                // Recargar pedidos
+
                 observarPedidos()
-            } catch (error: Exception) {
+
+            } catch (e: Exception) {
                 _ui.value = _ui.value.copy(
                     loading = false,
-                    error = error.message ?: "Error al cancelar pedido"
+                    error = e.message ?: "Error al cancelar pedido"
                 )
             }
         }

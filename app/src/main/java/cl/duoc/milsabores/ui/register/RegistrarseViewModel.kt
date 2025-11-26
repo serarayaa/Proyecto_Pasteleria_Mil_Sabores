@@ -1,157 +1,141 @@
 package cl.duoc.milsabores.ui.register
 
-import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.auth.FirebaseAuthUserCollisionException
-import kotlinx.coroutines.delay
+import cl.duoc.milsabores.data.remote.dto.CrearUsuarioRequest
+import cl.duoc.milsabores.data.repository.AuthRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.suspendCancellableCoroutine
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 
-data class RegisterUiState(
+data class RegistrarseUiState(
+    val rut: String = "",
+    val nombre: String = "",
+    val fechaNacimiento: String = "",
     val email: String = "",
-    val pass: String = "",
-    val confirm: String = "",
+    val password: String = "",
+    val confirmPassword: String = "",
     val loading: Boolean = false,
-    val error: String? = null,          // para compatibilidad con la UI
-    val registered: Boolean = false,
-    // Validaciones por campo
-    val emailError: String? = null,
-    val passError: String? = null,
-    val confirmError: String? = null,
-    val message: String? = null         // por si quieres mostrar snackbar
+    val error: String? = null,
+    val message: String? = null,
+    val registered: Boolean = false
 )
 
-class RegistrarseViewModel(
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
-) : ViewModel() {
+class RegistrarseViewModel : ViewModel() {
 
-    private val _ui = MutableStateFlow(RegisterUiState())
-    val ui: StateFlow<RegisterUiState> = _ui
+    private val authRepository = AuthRepository()
 
-    fun onEmail(v: String) {
-        val emailError = if (v.isNotEmpty() && !Patterns.EMAIL_ADDRESS.matcher(v).matches()) {
-            "Email inválido"
-        } else null
-        _ui.update {
-            it.copy(
-                email = v,
-                emailError = emailError,
-                error = null,
-                message = null,
-                registered = false
-            )
-        }
+    private val _ui = MutableStateFlow(RegistrarseUiState())
+    val ui: StateFlow<RegistrarseUiState> = _ui.asStateFlow()
+
+    // -------- handlers de campos --------
+
+    fun onRutChange(value: String) {
+        _ui.update { it.copy(rut = value, error = null, message = null) }
     }
 
-    fun onPass(v: String) {
-        val passError = if (v.isNotEmpty() && v.length < 6) {
-            "Clave de 6+ caracteres"
-        } else null
-        _ui.update {
-            it.copy(
-                pass = v,
-                passError = passError,
-                error = null,
-                message = null,
-                registered = false
-            )
-        }
+    fun onNombreChange(value: String) {
+        _ui.update { it.copy(nombre = value, error = null, message = null) }
     }
 
-    fun onConfirm(v: String) {
-        val confirmError = if (v.isNotEmpty() && v != _ui.value.pass) {
-            "Las claves no coinciden"
-        } else null
-        _ui.update {
-            it.copy(
-                confirm = v,
-                confirmError = confirmError,
-                error = null,
-                message = null,
-                registered = false
-            )
-        }
+    fun onFechaNacimientoChange(value: String) {
+        _ui.update { it.copy(fechaNacimiento = value, error = null, message = null) }
+    }
+
+    fun onEmailChange(value: String) {
+        _ui.update { it.copy(email = value, error = null, message = null) }
+    }
+
+    fun onPasswordChange(value: String) {
+        _ui.update { it.copy(password = value, error = null, message = null) }
+    }
+
+    fun onConfirmPasswordChange(value: String) {
+        _ui.update { it.copy(confirmPassword = value, error = null, message = null) }
+    }
+
+    private fun isEmailValid(email: String): Boolean {
+        val regex = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")
+        return email.isNotBlank() && regex.matches(email)
+    }
+
+    private fun isFechaValida(fecha: String): Boolean {
+        // Solo validamos formato dd-MM-yyyy (ej: 10-05-2000)
+        val regex = Regex("^\\d{2}-\\d{2}-\\d{4}\$")
+        return fecha.isNotBlank() && regex.matches(fecha)
     }
 
     fun submit() {
         val s = _ui.value
 
-        // Validaciones finales
-        when {
-            !Patterns.EMAIL_ADDRESS.matcher(s.email).matches() ->
-                _ui.update { it.copy(error = "Email inválido", message = "Email inválido") }
+        // Validaciones básicas
+        if (s.nombre.isBlank() ||
+            s.email.isBlank() ||
+            s.password.isBlank() ||
+            s.confirmPassword.isBlank() ||
+            s.fechaNacimiento.isBlank()
+        ) {
+            _ui.update { it.copy(error = "Completa todos los campos obligatorios.") }
+            return
+        }
 
-            s.pass.length < 6 ->
-                _ui.update { it.copy(error = "Clave de 6+ caracteres", message = "Clave de 6+ caracteres") }
+        if (!isEmailValid(s.email)) {
+            _ui.update { it.copy(error = "El correo electrónico no es válido.") }
+            return
+        }
 
-            s.pass != s.confirm ->
-                _ui.update { it.copy(error = "Las claves no coinciden", message = "Las claves no coinciden") }
+        if (s.password.length < 6) {
+            _ui.update { it.copy(error = "La contraseña debe tener al menos 6 caracteres.") }
+            return
+        }
 
-            else -> viewModelScope.launch {
-                _ui.update { it.copy(loading = true, error = null, message = null, registered = false) }
+        if (s.password != s.confirmPassword) {
+            _ui.update { it.copy(error = "Las contraseñas no coinciden.") }
+            return
+        }
 
-                try {
-                    // Registro REAL en FirebaseAuth
-                    createUserWithFirebase(s.email, s.pass)
+        if (!isFechaValida(s.fechaNacimiento)) {
+            _ui.update { it.copy(error = "La fecha debe tener formato dd-MM-aaaa (ej: 10-05-2000).") }
+            return
+        }
 
-                    // Pequeña pausa solo para efecto visual si quieres mantenerlo
-                    delay(300)
+        // Armamos request EXACTO como lo espera el backend
+        val req = CrearUsuarioRequest(
+            rut = if (s.rut.isBlank()) "SIN_RUT" else s.rut,
+            nombre = s.nombre,
+            mail = s.email,
+            password = s.password,
+            fechaNac = s.fechaNacimiento
+            // idrol e idfirebase usan los valores por defecto (1, "app-mobile")
+        )
 
-                    _ui.update {
-                        it.copy(
-                            loading = false,
-                            registered = true,
-                            error = null,
-                            message = "Cuenta creada correctamente"
-                        )
-                    }
-                } catch (e: Exception) {
-                    val readable = when (e) {
-                        is FirebaseAuthUserCollisionException ->
-                            "Este correo ya está registrado"
-                        else ->
-                            "Error al registrar: ${e.message ?: "intente nuevamente"}"
-                    }
+        viewModelScope.launch {
+            _ui.update { it.copy(loading = true, error = null, message = null) }
 
-                    _ui.update {
-                        it.copy(
-                            loading = false,
-                            registered = false,
-                            error = readable,
-                            message = readable
-                        )
-                    }
+            try {
+                authRepository.registrar(req)
+
+                _ui.update {
+                    it.copy(
+                        loading = false,
+                        registered = true,
+                        message = "Cuenta creada correctamente."
+                    )
+                }
+            } catch (e: Exception) {
+                _ui.update {
+                    it.copy(
+                        loading = false,
+                        error = "No se pudo registrar: ${e.message}"
+                    )
                 }
             }
         }
     }
 
-    fun messageConsumed() {
+    fun clearMessage() {
         _ui.update { it.copy(message = null, error = null) }
-    }
-
-    private suspend fun createUserWithFirebase(
-        email: String,
-        password: String
-    ) = suspendCancellableCoroutine { cont ->
-        auth.createUserWithEmailAndPassword(email, password)
-            .addOnCompleteListener { task ->
-                if (!cont.isActive) return@addOnCompleteListener
-
-                if (task.isSuccessful) {
-                    cont.resume(Unit)
-                } else {
-                    cont.resumeWithException(
-                        task.exception ?: Exception("Error desconocido al registrar")
-                    )
-                }
-            }
     }
 }

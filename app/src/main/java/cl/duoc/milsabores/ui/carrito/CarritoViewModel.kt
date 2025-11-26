@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
+
 data class CarritoUiState(
     val procesandoPedido: Boolean = false,
     val pedidoCreado: Boolean = false,
@@ -44,7 +45,10 @@ class CarritoViewModel(
     private val _uiState = MutableStateFlow(CarritoUiState())
     val uiState: StateFlow<CarritoUiState> = _uiState.asStateFlow()
 
+    // ======================
     // Acciones sobre items
+    // ======================
+
     fun actualizarCantidad(productoId: String, cantidad: Int) {
         repo.actualizarCantidad(productoId, cantidad)
     }
@@ -57,7 +61,11 @@ class CarritoViewModel(
     fun decrementarProducto(productoId: String) {
         val item = items.value.find { it.productoId == productoId }
         item?.let {
-            if (it.cantidad > 1) actualizarCantidad(productoId, it.cantidad - 1) else removerProducto(productoId)
+            if (it.cantidad > 1) {
+                actualizarCantidad(productoId, it.cantidad - 1)
+            } else {
+                removerProducto(productoId)
+            }
         }
     }
 
@@ -74,22 +82,39 @@ class CarritoViewModel(
         _uiState.value = _uiState.value.copy(observaciones = obs)
     }
 
-    // Finalizar compra guarda pedido local y limpia carrito
+    // ======================
+    // Finalizar compra
+    // ======================
+
     fun finalizarCompra() {
         if (_uiState.value.procesandoPedido) return
+
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(procesandoPedido = true, error = null)
+            _uiState.value = _uiState.value.copy(
+                procesandoPedido = true,
+                error = null
+            )
+
             try {
                 val itemsCarrito = items.value
                 if (itemsCarrito.isEmpty()) {
-                    _uiState.value = _uiState.value.copy(procesandoPedido = false, error = "El carrito está vacío")
+                    _uiState.value = _uiState.value.copy(
+                        procesandoPedido = false,
+                        error = "El carrito está vacío"
+                    )
                     return@launch
                 }
 
                 val productos = itemsCarrito.map { it ->
-                    ProductoPedido(nombre = it.nombre, cantidad = it.cantidad, precio = it.precio)
+                    ProductoPedido(
+                        nombre = it.nombre,
+                        cantidad = it.cantidad,
+                        precio = it.precio
+                    )
                 }
+
                 val uid = auth.currentUser?.uid ?: "usuario_local"
+
                 val pedido = Pedido(
                     id = "",
                     uid = uid,
@@ -121,5 +146,7 @@ class CarritoViewModel(
         }
     }
 
-    fun resetPedidoCreado() { _uiState.value = _uiState.value.copy(pedidoCreado = false) }
+    fun resetPedidoCreado() {
+        _uiState.value = _uiState.value.copy(pedidoCreado = false)
+    }
 }

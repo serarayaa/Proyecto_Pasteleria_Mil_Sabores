@@ -1,3 +1,8 @@
+@file:OptIn(
+    androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.foundation.ExperimentalFoundationApi::class
+)
+
 package cl.duoc.milsabores.ui.principal
 
 import android.app.Application
@@ -10,21 +15,8 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.aspectRatio
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -48,7 +40,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -134,14 +125,15 @@ private fun BottomBar(
         containerColor = if (isDarkMode) {
             androidx.compose.ui.graphics.Color(0xFF1A1A1A)
         } else {
-            MaterialTheme.colorScheme.surfaceContainer
+            // surfaceContainer no existe en tu versión → usamos surface
+            MaterialTheme.colorScheme.surface
         },
         contentColor = if (isDarkMode) {
             androidx.compose.ui.graphics.Color(0xFFF5F5F5)
         } else {
             ChocolateBrown
         },
-        modifier = Modifier.height(80.dp) // Más alto para mejor proporción
+        modifier = Modifier.height(80.dp)
     ) {
         bottomItems.forEach { item ->
             val label = item.title
@@ -171,7 +163,7 @@ private fun BottomBar(
                 icon = {
                     Box(
                         modifier = Modifier
-                            .size(if (isSelected) 32.dp else 26.dp) // Iconos más grandes
+                            .size(if (isSelected) 32.dp else 26.dp)
                             .animateContentSize(),
                         contentAlignment = Alignment.Center
                     ) {
@@ -185,7 +177,7 @@ private fun BottomBar(
                                             StrawberryRed
                                         },
                                         contentColor = androidx.compose.ui.graphics.Color.White,
-                                        modifier = Modifier.scale(1.1f) // Badge más visible
+                                        modifier = Modifier.scale(1.1f)
                                     ) {
                                         Text(
                                             "$cantidadCarrito",
@@ -219,7 +211,7 @@ private fun BottomBar(
                 },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = if (isDarkMode) {
-                        androidx.compose.ui.graphics.Color(0xFFFF4E88) // Rosa vibrante
+                        androidx.compose.ui.graphics.Color(0xFFFF4E88)
                     } else {
                         StrawberryRed
                     },
@@ -229,7 +221,7 @@ private fun BottomBar(
                         StrawberryRed
                     },
                     unselectedIconColor = if (isDarkMode) {
-                        androidx.compose.ui.graphics.Color(0xFFB8B8B8) // Gris más claro
+                        androidx.compose.ui.graphics.Color(0xFFB8B8B8)
                     } else {
                         ChocolateBrown.copy(alpha = 0.6f)
                     },
@@ -239,7 +231,7 @@ private fun BottomBar(
                         ChocolateBrown.copy(alpha = 0.6f)
                     },
                     indicatorColor = if (isDarkMode) {
-                        androidx.compose.ui.graphics.Color(0xFF3D1F2E) // Rosa oscuro de fondo
+                        androidx.compose.ui.graphics.Color(0xFF3D1F2E)
                     } else {
                         GradientPink.copy(alpha = 0.3f)
                     }
@@ -249,7 +241,6 @@ private fun BottomBar(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
 @Composable
 fun PrincipalScreen(
     onLogout: () -> Unit = {},
@@ -268,7 +259,6 @@ fun PrincipalScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    // Columnas adaptativas (mejor en tablets/landscape)
     val columnas = GridCells.Adaptive(minSize = 170.dp)
 
     LaunchedEffect(state.loggedOut) {
@@ -407,7 +397,7 @@ fun PrincipalScreen(
                             .padding(horizontal = 0.dp),
                         verticalArrangement = Arrangement.spacedBy(0.dp)
                     ) {
-                        // Banner de bienvenida animado
+                        // Banner
                         AnimatedVisibility(
                             visible = true,
                             enter = fadeIn(tween(600)) + slideInVertically(tween(600)) { -it },
@@ -491,7 +481,6 @@ fun PrincipalScreen(
                             }
                         }
 
-                        // Título de categorías
                         Text(
                             "Categorías",
                             style = MaterialTheme.typography.titleLarge,
@@ -500,7 +489,6 @@ fun PrincipalScreen(
                             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                         )
 
-                        // Categorías mejoradas
                         LazyRow(
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
@@ -512,7 +500,6 @@ fun PrincipalScreen(
                                 Card(
                                     onClick = { vm.setCategoria(cat) },
                                     modifier = Modifier
-                                        .animateItem()
                                         .shadow(if (isSelected) 8.dp else 2.dp, RoundedCornerShape(16.dp)),
                                     shape = RoundedCornerShape(16.dp),
                                     colors = CardDefaults.cardColors(
@@ -557,7 +544,6 @@ fun PrincipalScreen(
                             }
                         }
 
-                        // Título de productos
                         Text(
                             text = if (categoriaSel == "Todos") "Todos los Productos" else (categoriaSel ?: "Productos"),
                             style = MaterialTheme.typography.titleLarge,
@@ -571,7 +557,6 @@ fun PrincipalScreen(
                             enter = fadeIn(),
                             exit = fadeOut()
                         ) {
-                            // Skeleton loaders en lugar de CircularProgressIndicator
                             LazyVerticalGrid(
                                 columns = columnas,
                                 modifier = Modifier.fillMaxSize(),
@@ -579,8 +564,10 @@ fun PrincipalScreen(
                                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                                 contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 80.dp)
                             ) {
-                                items(6) { // Mostrar 6 skeletons
-                                    cl.duoc.milsabores.ui.components.ProductCardSkeleton(isDarkMode = isDarkMode)
+                                items(6) {
+                                    cl.duoc.milsabores.ui.components.ProductCardSkeleton(
+                                        isDarkMode = isDarkMode
+                                    )
                                 }
                             }
                         }
@@ -618,25 +605,17 @@ fun PrincipalScreen(
                             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 80.dp)
                         ) {
                             items(productos, key = { it.id }) { producto ->
+                                val hapticsLocal = haptics
                                 Box(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .aspectRatio(0.55f)
-                                        .animateItem(
-                                            fadeInSpec = tween(400),
-                                            fadeOutSpec = tween(200),
-                                            placementSpec = spring(
-                                                dampingRatio = Spring.DampingRatioMediumBouncy,
-                                                stiffness = Spring.StiffnessLow
-                                            )
-                                        )
                                         .animateContentSize()
                                 ) {
                                     UiProductosCard(
                                         producto = producto,
                                         onAgregar = {
                                             vm.agregarAlCarrito(producto)
-                                            haptics.performHapticFeedback(HapticFeedbackType.LongPress)
+                                            hapticsLocal.performHapticFeedback(HapticFeedbackType.LongPress)
                                             scope.launch {
                                                 snackbarHostState.showSnackbar(
                                                     message = "✓ ${producto.titulo} agregado al carrito",
@@ -679,7 +658,6 @@ fun PrincipalScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.Center
                     ) {
-                        // Icono con animación
                         Card(
                             modifier = Modifier
                                 .size(120.dp)
@@ -761,7 +739,8 @@ fun PrincipalScreen(
                         }
                     }
                 }
-                val carritoVm: cl.duoc.milsabores.ui.carrito.CarritoViewModel = viewModel(factory = carritoVmFactory)
+                val carritoVm: cl.duoc.milsabores.ui.carrito.CarritoViewModel =
+                    viewModel(factory = carritoVmFactory)
 
                 cl.duoc.milsabores.ui.carrito.CarritoScreen(
                     vm = carritoVm,
