@@ -13,17 +13,16 @@ object RetrofitClient {
 
     private const val AUTH_BASE_URL = "http://10.0.2.2:8085/"
     private const val PRODUCT_BASE_URL = "http://10.0.2.2:8087/"
-
-    // Dirección base para la API de clima (Open‑Meteo)
     private const val WEATHER_BASE_URL = "https://api.open-meteo.com/v1/"
 
     private val logging = HttpLoggingInterceptor().apply {
         level = HttpLoggingInterceptor.Level.BODY
     }
 
+    // Aquí irá token cuando ya tengamos el login funcionando
     private val authInterceptor = Interceptor { chain ->
         val request = chain.request().newBuilder()
-            // Aquí agregarás token cuando lo guardemos
+            // .addHeader("Authorization", "Bearer $token")
             .build()
         chain.proceed(request)
     }
@@ -47,6 +46,11 @@ object RetrofitClient {
     private val retrofitProduct = buildRetrofit(PRODUCT_BASE_URL)
     private val retrofitWeather = buildRetrofit(WEATHER_BASE_URL)
 
+    val authApi: AuthApiService = retrofitAuth.create(AuthApiService::class.java)
+    val productApi: ProductApiService = retrofitProduct.create(ProductApiService::class.java)
+
+    // ------------ API CLIMA (no se toca nada) -------------------
+
     interface WeatherApiService {
         @GET("forecast")
         suspend fun getCurrentWeather(
@@ -56,10 +60,6 @@ object RetrofitClient {
         ): WeatherResponse
     }
 
-    /**
-     * Modelo de respuesta simplificado para la API de clima.  Ajusta las
-     * propiedades según las necesidades de tu UI.
-     */
     data class WeatherResponse(
         val latitude: Double,
         val longitude: Double,
@@ -72,12 +72,5 @@ object RetrofitClient {
         val weathercode: Int
     )
 
-
-    val authApi: AuthApiService = retrofitAuth.create(AuthApiService::class.java)
-    val productApi: ProductApiService = retrofitProduct.create(ProductApiService::class.java)
-
-    /**
-     * Cliente para consumir el servicio de clima.
-     */
     val weatherApi: WeatherApiService = retrofitWeather.create(WeatherApiService::class.java)
 }

@@ -4,21 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import cl.duoc.milsabores.data.remote.dto.CrearUsuarioRequest
 import cl.duoc.milsabores.data.repository.AuthRepository
-import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.LocalDate
-import java.time.Period
-import java.time.format.DateTimeFormatter
-import javax.inject.Inject
 
 data class RegistrarseUiState(
     val rut: String = "",
     val nombre: String = "",
-    val fechaNacimiento: String = "",   // formato: dd-MM-aaaa
+    val fechaNacimiento: String = "",
     val email: String = "",
     val password: String = "",
     val confirmPassword: String = "",
@@ -28,104 +23,99 @@ data class RegistrarseUiState(
     val registered: Boolean = false
 )
 
-@HiltViewModel
-class RegistrarseViewModel @Inject constructor(
-    private val authRepository: AuthRepository
-) : ViewModel() {
+class RegistrarseViewModel : ViewModel() {
+
+    private val authRepository = AuthRepository()
 
     private val _ui = MutableStateFlow(RegistrarseUiState())
     val ui: StateFlow<RegistrarseUiState> = _ui.asStateFlow()
 
+    // -------- handlers de campos --------
+
     fun onRutChange(value: String) {
-        _ui.update { it.copy(rut = value, error = null) }
+        _ui.update { it.copy(rut = value, error = null, message = null) }
     }
 
     fun onNombreChange(value: String) {
-        _ui.update { it.copy(nombre = value, error = null) }
+        _ui.update { it.copy(nombre = value, error = null, message = null) }
     }
 
     fun onFechaNacimientoChange(value: String) {
-        _ui.update { it.copy(fechaNacimiento = value, error = null) }
+        _ui.update { it.copy(fechaNacimiento = value, error = null, message = null) }
     }
 
     fun onEmailChange(value: String) {
-        _ui.update { it.copy(email = value, error = null) }
+        _ui.update { it.copy(email = value, error = null, message = null) }
     }
 
     fun onPasswordChange(value: String) {
-        _ui.update { it.copy(password = value, error = null) }
+        _ui.update { it.copy(password = value, error = null, message = null) }
     }
 
     fun onConfirmPasswordChange(value: String) {
-        _ui.update { it.copy(confirmPassword = value, error = null) }
+        _ui.update { it.copy(confirmPassword = value, error = null, message = null) }
     }
 
-    private fun calcularEdad(fechaNacimiento: String): Int? {
-        if (fechaNacimiento.isBlank()) return null
-        return try {
-            val formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy")
-            val fecha = LocalDate.parse(fechaNacimiento, formatter)
-            Period.between(fecha, LocalDate.now()).years
-        } catch (e: Exception) {
-            null
-        }
+    private fun isEmailValid(email: String): Boolean {
+        val regex = Regex("^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$")
+        return email.isNotBlank() && regex.matches(email)
+    }
+
+    private fun isFechaValida(fecha: String): Boolean {
+        // Solo validamos formato dd-MM-yyyy (ej: 10-05-2000)
+        val regex = Regex("^\\d{2}-\\d{2}-\\d{4}\$")
+        return fecha.isNotBlank() && regex.matches(fecha)
     }
 
     fun submit() {
-        val state = _ui.value
+        val s = _ui.value
 
         // Validaciones básicas
-        if (state.nombre.isBlank() ||
-            state.email.isBlank() ||
-            state.password.isBlank() ||
-            state.confirmPassword.isBlank() ||
-            state.fechaNacimiento.isBlank()
+        if (s.nombre.isBlank() ||
+            s.email.isBlank() ||
+            s.password.isBlank() ||
+            s.confirmPassword.isBlank() ||
+            s.fechaNacimiento.isBlank()
         ) {
             _ui.update { it.copy(error = "Completa todos los campos obligatorios.") }
             return
         }
 
-        if (!state.email.contains("@")) {
+        if (!isEmailValid(s.email)) {
             _ui.update { it.copy(error = "El correo electrónico no es válido.") }
             return
         }
 
-        if (state.password.length < 6) {
+        if (s.password.length < 6) {
             _ui.update { it.copy(error = "La contraseña debe tener al menos 6 caracteres.") }
             return
         }
 
-        if (state.password != state.confirmPassword) {
+        if (s.password != s.confirmPassword) {
             _ui.update { it.copy(error = "Las contraseñas no coinciden.") }
             return
         }
 
-        val edad = calcularEdad(state.fechaNacimiento)
-        if (edad == null || edad < 0) {
-            _ui.update {
-                it.copy(
-                    error = "Fecha de nacimiento inválida. Usa el formato dd-MM-aaaa."
-                )
-            }
+        if (!isFechaValida(s.fechaNacimiento)) {
+            _ui.update { it.copy(error = "La fecha debe tener formato dd-MM-aaaa (ej: 10-05-2000).") }
             return
         }
 
-        viewModelScope.launch {
-            _ui.update { it.copy(loading = true, error = null, message = null, registered = false) }
-            try {
-                val request = CrearUsuarioRequest(
-                    rut = if (state.rut.isBlank()) "SIN_RUT" else state.rut,
-                    nombre = state.nombre,
-                    mail = state.email,
-                    password = state.password,
-                    idrol = 2,                  // 2 = cliente / usuario normal
-                    idfirebase = null,
-                    fechaNacimiento = state.fechaNacimiento,
-                    edad = edad
-                )
+        // Armamos request EXACTO como lo espera el backend
+        val req = CrearUsuarioRequest(
+            rut = if (s.rut.isBlank()) "SIN_RUT" else s.rut,
+            nombre = s.nombre,
+            mail = s.email,
+            password = s.password,
+            fechaNac = s.fechaNacimiento
+            // idrol e idfirebase usan los valores por defecto (1, "app-mobile")
+        )
 
-                // Llamada al backend (auth-service)
-                authRepository.registrar(request)
+        viewModelScope.launch {
+            _ui.update { it.copy(loading = true, error = null, message = null) }
+
+            try {
+                authRepository.registrar(req)
 
                 _ui.update {
                     it.copy(
@@ -138,7 +128,7 @@ class RegistrarseViewModel @Inject constructor(
                 _ui.update {
                     it.copy(
                         loading = false,
-                        error = e.message ?: "No se pudo registrar el usuario."
+                        error = "No se pudo registrar: ${e.message}"
                     )
                 }
             }

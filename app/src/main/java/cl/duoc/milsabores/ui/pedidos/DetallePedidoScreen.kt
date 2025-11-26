@@ -33,8 +33,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -200,7 +200,7 @@ fun DetallePedidoScreen(
                             }
                         }
 
-                        HorizontalDivider(
+                        Divider(
                             modifier = Modifier.padding(vertical = 16.dp),
                             color = ChocolateBrown.copy(alpha = 0.1f)
                         )
@@ -367,8 +367,6 @@ fun DetallePedidoScreen(
                                             modifier = Modifier.fillMaxSize(),
                                             contentAlignment = Alignment.Center
                                         ) {
-                                            // Intenta cargar la imagen del producto
-                                            // Si no hay, muestra un ícono de pastel
                                             Icon(
                                                 Icons.Default.Cake,
                                                 contentDescription = null,
@@ -414,7 +412,7 @@ fun DetallePedidoScreen(
                             }
                         }
 
-                        HorizontalDivider(
+                        Divider(
                             modifier = Modifier.padding(vertical = 12.dp),
                             color = ChocolateBrown.copy(alpha = 0.2f),
                             thickness = 2.dp

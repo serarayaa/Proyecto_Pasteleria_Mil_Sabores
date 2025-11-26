@@ -18,9 +18,9 @@ import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Divider
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -90,7 +90,8 @@ fun RecordatorioScreen(vm: RecordatorioViewModel) {
             Text(state.error ?: "", color = MaterialTheme.colorScheme.error)
         }
 
-        HorizontalDivider()
+        // 🔧 antes: HorizontalDivider()
+        Divider()
 
         // --- Listado ---
         if (state.items.isEmpty()) {

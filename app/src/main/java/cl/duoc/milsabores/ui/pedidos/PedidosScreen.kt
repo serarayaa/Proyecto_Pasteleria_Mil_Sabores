@@ -1,3 +1,8 @@
+@file:OptIn(
+    androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.foundation.ExperimentalFoundationApi::class
+)
+
 package cl.duoc.milsabores.ui.pedidos
 
 import android.app.Application
@@ -8,7 +13,6 @@ import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
 import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -18,40 +22,68 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Divider
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewmodel.compose.viewModel
 import cl.duoc.milsabores.model.EstadoPedido
 import cl.duoc.milsabores.model.Pedido
 import cl.duoc.milsabores.ui.mapper.color
-import cl.duoc.milsabores.ui.theme.*
+import cl.duoc.milsabores.ui.theme.CaramelGold
+import cl.duoc.milsabores.ui.theme.ChocolateBrown
+import cl.duoc.milsabores.ui.theme.GradientOrange
+import cl.duoc.milsabores.ui.theme.GradientPink
+import cl.duoc.milsabores.ui.theme.StrawberryRed
+import cl.duoc.milsabores.ui.theme.VanillaWhite
 import cl.duoc.milsabores.ui.util.clp
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import androidx.compose.foundation.ExperimentalFoundationApi
 import kotlinx.coroutines.delay
 
+// ---------- Helpers de fecha ----------
 private val fechaClFormatter by lazy {
     SimpleDateFormat("dd MMM yyyy, HH:mm", Locale.forLanguageTag("es-ES"))
 }
 private fun formatearFecha(timestamp: Long): String = fechaClFormatter.format(Date(timestamp))
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalFoundationApi::class)
+// ---------- Pantalla principal ----------
 @Composable
 fun PedidosScreen() {
-    val context = LocalContext.current
+    val context = androidx.compose.ui.platform.LocalContext.current
     val isDarkMode = androidx.compose.foundation.isSystemInDarkTheme()
     var isVisible by remember { mutableStateOf(false) }
 
@@ -80,7 +112,7 @@ fun PedidosScreen() {
         }
     }
 
-    // Pantalla de detalle si hay selección
+    // Si hay pedido seleccionado, mostramos la pantalla de detalle
     if (state.pedidoSeleccionado != null) {
         DetallePedidoScreen(
             pedido = state.pedidoSeleccionado!!,
@@ -107,7 +139,7 @@ fun PedidosScreen() {
                             "Mis Pedidos",
                             fontWeight = FontWeight.Bold,
                             color = if (isDarkMode) {
-                                androidx.compose.ui.graphics.Color(0xFFE8E8E8)
+                                Color(0xFFE8E8E8)
                             } else {
                                 ChocolateBrown
                             }
@@ -116,7 +148,7 @@ fun PedidosScreen() {
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = if (isDarkMode) {
-                        androidx.compose.ui.graphics.Color(0xFF1E1E1E)
+                        Color(0xFF1E1E1E)
                     } else {
                         MaterialTheme.colorScheme.surface
                     }
@@ -131,7 +163,7 @@ fun PedidosScreen() {
                 .padding(padding)
                 .then(
                     if (isDarkMode) {
-                        Modifier.background(androidx.compose.ui.graphics.Color(0xFF121212))
+                        Modifier.background(Color(0xFF121212))
                     } else {
                         Modifier.background(
                             brush = Brush.verticalGradient(
@@ -174,7 +206,7 @@ fun PedidosScreen() {
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
                                     color = if (isDarkMode) {
-                                        androidx.compose.ui.graphics.Color(0xFFE8E8E8)
+                                        Color(0xFFE8E8E8)
                                     } else {
                                         ChocolateBrown
                                     },
@@ -211,6 +243,7 @@ fun PedidosScreen() {
     }
 }
 
+// ---------- Card de pedido ----------
 @Composable
 private fun PedidoCard(
     pedido: Pedido,
@@ -232,7 +265,7 @@ private fun PedidoCard(
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(
             containerColor = if (isDarkMode) {
-                androidx.compose.ui.graphics.Color(0xFF2A2A2A)
+                Color(0xFF2A2A2A)
             } else {
                 Color.White
             }
@@ -243,6 +276,7 @@ private fun PedidoCard(
                 .fillMaxWidth()
                 .padding(16.dp)
         ) {
+            // Cabecera con estado
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -286,7 +320,7 @@ private fun PedidoCard(
                     }
                 }
 
-                // Badge del estado (con semántica para accesibilidad)
+                // Badge del estado
                 Box(
                     modifier = Modifier
                         .background(
@@ -311,6 +345,7 @@ private fun PedidoCard(
 
             Spacer(Modifier.height(16.dp))
 
+            // Lista de productos
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 val toShow = if (expanded) pedido.productos else pedido.productos.take(2)
                 toShow.forEach { producto ->
@@ -350,7 +385,7 @@ private fun PedidoCard(
                             color = StrawberryRed
                         )
                         Icon(
-                            if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                            imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                             contentDescription = null,
                             tint = StrawberryRed,
                             modifier = Modifier.size(20.dp)
@@ -359,6 +394,7 @@ private fun PedidoCard(
                 }
             }
 
+            // Observaciones
             if (pedido.observaciones.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))
                 Row(
@@ -386,9 +422,10 @@ private fun PedidoCard(
             }
 
             Spacer(Modifier.height(12.dp))
-            HorizontalDivider(color = ChocolateBrown.copy(alpha = 0.1f))
+            Divider(color = ChocolateBrown.copy(alpha = 0.1f), thickness = 1.dp)
             Spacer(Modifier.height(12.dp))
 
+            // Total
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -411,6 +448,7 @@ private fun PedidoCard(
     }
 }
 
+// ---------- Vista vacía ----------
 @Composable
 private fun EmptyPedidosView(
     modifier: Modifier = Modifier,
@@ -421,7 +459,6 @@ private fun EmptyPedidosView(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Icono grande con Card
         Card(
             modifier = Modifier
                 .size(140.dp)

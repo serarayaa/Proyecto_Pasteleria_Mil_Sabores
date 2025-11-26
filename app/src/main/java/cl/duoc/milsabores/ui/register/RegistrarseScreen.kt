@@ -18,18 +18,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.viewmodel.compose.viewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RegistrarseScreen(
     onBack: () -> Unit,
     onRegistered: () -> Unit,
-    viewModel: RegistrarseViewModel = hiltViewModel()
+    viewModel: RegistrarseViewModel = viewModel()
 ) {
     val ui by viewModel.ui.collectAsState()
 
-    // Cuando se registre con éxito, volvemos a Login (vía callback)
     LaunchedEffect(ui.registered) {
         if (ui.registered) {
             viewModel.clearMessage()
@@ -54,6 +53,7 @@ fun RegistrarseScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -69,7 +69,6 @@ fun RegistrarseScreen(
                 )
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Nombre
                 OutlinedTextField(
                     value = ui.nombre,
                     onValueChange = viewModel::onNombreChange,
@@ -81,7 +80,6 @@ fun RegistrarseScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // RUT (opcional)
                 OutlinedTextField(
                     value = ui.rut,
                     onValueChange = viewModel::onRutChange,
@@ -93,7 +91,6 @@ fun RegistrarseScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Fecha nacimiento
                 OutlinedTextField(
                     value = ui.fechaNacimiento,
                     onValueChange = viewModel::onFechaNacimientoChange,
@@ -105,7 +102,6 @@ fun RegistrarseScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Email
                 OutlinedTextField(
                     value = ui.email,
                     onValueChange = viewModel::onEmailChange,
@@ -117,7 +113,6 @@ fun RegistrarseScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Password
                 OutlinedTextField(
                     value = ui.password,
                     onValueChange = viewModel::onPasswordChange,
@@ -130,7 +125,6 @@ fun RegistrarseScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Confirm Password
                 OutlinedTextField(
                     value = ui.confirmPassword,
                     onValueChange = viewModel::onConfirmPasswordChange,
@@ -143,7 +137,6 @@ fun RegistrarseScreen(
 
                 Spacer(modifier = Modifier.height(16.dp))
 
-                // Mensajes de error / éxito
                 ui.error?.let { error ->
                     Text(
                         text = error,
@@ -162,7 +155,6 @@ fun RegistrarseScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                // Botón Registrar
                 Button(
                     onClick = { viewModel.submit() },
                     enabled = !ui.loading,
@@ -183,9 +175,7 @@ fun RegistrarseScreen(
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                TextButton(
-                    onClick = onBack
-                ) {
+                TextButton(onClick = onBack) {
                     Text("Ya tengo una cuenta, iniciar sesión")
                 }
 
