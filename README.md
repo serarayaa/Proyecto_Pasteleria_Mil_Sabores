@@ -1,173 +1,159 @@
-# 🍰 Pastelería Mil Sabores — Aplicación Móvil Android
+# Pastelería Mil Sabores — Aplicación Android
 
-Última actualización: 2025-11-26
+Última actualización: 2025-11-30
 
 Resumen
 -------
-Pastelería Mil Sabores es una aplicación Android (Kotlin + Jetpack Compose) para gestionar catálogo, carrito y pedidos de una pastelería. Integra persistencia local, consumo de APIs REST y servicios de Firebase para autenticación y sincronización.
-
-Propósito de este README
-------------------------
-Este README ofrece:
-- Resumen del proyecto y estado actual.
-- Comandos principales (PowerShell) para build, pruebas y firma.
-- Tabla ordenada por carpetas con archivos relevantes (resumen).
-- Enlaces a documentación extensa y diagramas en `docs/`.
+Pastelería Mil Sabores es una aplicación móvil Android (Kotlin + Jetpack Compose) que permite a los usuarios explorar un catálogo de productos, gestionar un carrito de compras y realizar pedidos en línea. El proyecto usa un patrón MVVM y se integra con servicios externos (Retrofit, Firebase) y almacenamiento local (Room).
 
 Estado del proyecto
 -------------------
-- Plataforma: Android (Kotlin, Jetpack Compose, MVVM).
-- Backend propio: no incluido en este repositorio (adaptadores Retrofit preparados).
-- Firebase: archivo `app/google-services.json` incluido para desarrollo.
-- Rama de trabajo: la rama activa puede variar; revisar el control de versiones remoto.
+- Estado: Funcional (interfaz y flujo principal implementados).
+- Artefactos: APK de release disponible en `app/release/app-release.apk` (ver `app/release/output-metadata.json`).
 
 Requisitos
 ----------
-- Android Studio (recomendado) con SDK Android correspondiente.
-- JDK 11+ (el proyecto puede requerir JDK 17 según `gradle.properties`).
-- Emulador o dispositivo para pruebas instrumentadas.
+- JDK 17
+- Android SDK (instalado y configurado en `local.properties`)
+- Android Studio Flamingo o superior (recomendado)
+- PowerShell (Windows) / terminal compatible
+- Gradle Wrapper incluido (`gradlew` / `gradlew.bat`)
 
-Comandos útiles (PowerShell)
----------------------------
-Desde la raíz del proyecto en PowerShell (Windows):
+Cómo ejecutar (desarrollo)
+--------------------------
+Abra PowerShell en la raíz del proyecto y ejecute:
 
 ```powershell
-# Limpia y compila APK debug
+# Limpiar y compilar versión debug
 .\gradlew clean assembleDebug
-# Instala en dispositivo/emulador
+# Instalar en dispositivo conectado
 .\gradlew installDebug
-# Ejecuta lint y tests unitarios
-.\gradlew lint
-.\gradlew test
-# Tests instrumentados (emulador conectado)
-.\gradlew connectedAndroidTest
-# Generar release (ver sección firma más abajo)
-.\gradlew assembleRelease
 ```
 
-Estructura de archivos (tabla resumida)
---------------------------------------
-La lista completa con descripción por archivo (máx. 2 líneas) está en `docs/FILES_SUMMARY.md`. Aquí se ofrece un resumen organizado por carpetas principales.
+O abra el proyecto en Android Studio y ejecute desde el IDE.
 
-| Carpeta / Archivo (ruta relativa) | Descripción breve |
-|---|---|
-| `/` | Archivos raíz del proyecto (Gradle, wrapper, configuración global). |
-| `build.gradle.kts` | Script raíz (Kotlin DSL) que configura plugins, repositorios y versiones. |
-| `settings.gradle.kts` | Declara módulos del proyecto (p. ej. `:app`). |
-| `gradle/` | Dependencias de versión y wrapper. |
-| `app/` | Módulo Android principal con código fuente, recursos y configuración. |
-| `app/build.gradle.kts` | Script de build del módulo `app` con dependencias (Compose, Room, Retrofit, Firebase). |
-| `app/google-services.json` | Configuración de Firebase para desarrollo (no incluir secrets). |
-| `app/proguard-rules.pro` | Reglas de ofuscación para builds release. |
-| `app/src/main/AndroidManifest.xml` | Declaración de Activities, permisos y providers. |
-| `app/src/main/res/` | Recursos (valores, drawables, layouts, icons, themes). |
-| `app/src/main/java/cl/duoc/milsabores/` | Código fuente (Application, activities, UI, viewmodels, repositorios). |
-| `docs/` | Documentación técnica extendida y diagramas PlantUML. |
-| `docs/ARCHITECTURE.md` | Documentación arquitectónica extendida (flujo de datos, decisiones, build/release). |
-| `docs/FILES_SUMMARY.md` | Descripción por archivo (máx. 2 líneas) — fuente canónica para revisar archivos nuevos. |
-| `docs/diagrams/` | PlantUML (`*.puml`) y versiones generadas (`*.png`) de diagramas. |
-
-Resumen del código relevante
+Cómo ejecutar tests unitarios
 ----------------------------
-(Entradas representativas; la lista completa está en `docs/FILES_SUMMARY.md`)
-
-| Ruta | Archivo | Descripción |
-|---|---|---|
-| `app/src/main/java/cl/duoc/milsabores/` | `MilSaboresApplication.kt` | Inicializa servicios globales (Firebase, logging) al arrancar la app. |
-| `app/src/main/java/cl/duoc/milsabores/ui/` | `MainActivity.kt` | Activity principal que monta el NavHost Compose y aplica el tema. |
-| `app/src/main/java/cl/duoc/milsabores/ui/register/` | `RegistrarseScreen.kt` | Pantalla de registro (Jetpack Compose) y validaciones locales; conecta con `RegistrarseViewModel`. |
-| `app/src/main/java/cl/duoc/milsabores/viewmodel/` | `*ViewModel.kt` | ViewModels que exponen estado y lógica de presentación (StateFlow/LiveData). |
-| `app/src/main/java/cl/duoc/milsabores/data/` | `repository`, `remote`, `local` | Repositorios, clientes Retrofit, entidades y DAOs para Room. |
-| `app/src/main/java/cl/duoc/milsabores/service/` | `PedidosObserverService.kt` | Servicio que observa Firestore y notifica cambios de pedidos. |
-| `app/src/main/java/cl/duoc/milsabores/notifications/` | `NotificationHelper.kt` | Utilidades para canales y envío de notificaciones. |
-
-Arquitectura (resumen ampliado)
--------------------------------
-Patrón principal: MVVM (View → ViewModel → Repository → DataSource).
-- UI: Jetpack Compose; composables desacoplados consumen ViewModels.
-- ViewModels: manejan estado con StateFlow/LiveData, validaciones y llamadas a repositorios.
-- Repositorios: coordinan fuentes de datos (local Room y remoto via Retrofit/Firebase).
-- Persistencia: Room para datos locales (carrito, pedidos pendientes).
-- Red: Retrofit + OkHttp para APIs REST; mapeo DTO → dominio en capas de datos.
-- Inyección: Hilt o solución propia si está configurado (ver `app/build.gradle.kts`).
-
-Flujo típico de registro (ejemplo real en el código)
-- `RegistrarseScreen.kt` (Composable) recoge inputs y delega acciones en `RegistrarseViewModel`.
-- `RegistrarseViewModel` valida campos, llama al repositorio, expone `ui` con `loading`, `error`, `message`, `registered`.
-- Al completarse con éxito, la UI navega según `registered` y limpia mensajes.
-
-Documentación técnica y diagramas
---------------------------------
-- `docs/ARCHITECTURE.md`: explicación detallada del diseño, decisiones, patrones y guía para builds y firma de APK.
-- `docs/FILES_SUMMARY.md`: inventario exhaustivo con descripción por archivo (máx. 2 líneas).
-- `docs/diagrams/`: fuentes PlantUML (`*.puml`) y PNG generados. Ejemplos: `architecture.puml`, `order_flow.puml`.
-
-Regenerar diagramas PlantUML
----------------------------
-Si editas `*.puml` localmente puedes generar PNG con PlantUML (ejemplo con `plantuml.jar`):
-
 ```powershell
-# Desde la raíz del proyecto (PowerShell)
-java -jar tools/plantuml.jar -tpng docs/diagrams/*.puml -o docs/diagrams/
+.\gradlew test
+# Reportes en app/build/reports/tests/testDebugUnitTest/index.html
 ```
 
-(Opcional) Instala extensión PlantUML en tu IDE para previsualizar y exportar las imágenes.
+Generar APK firmado (release)
+-----------------------------
+1. Cree un keystore local (no incluya la llave en el repositorio):
+```powershell
+keytool -genkeypair -v -keystore release-keystore.jks -alias milsabores_alias -keyalg RSA -keysize 2048 -validity 10000
+```
+2. Configure las propiedades de firma en `gradle.properties` o variables de entorno (RELEASE_KEYSTORE_PASSWORD, RELEASE_KEY_ALIAS, RELEASE_KEY_PASSWORD). No incluir valores literales en el repo.
+3. Generar release firmado:
+```powershell
+.\gradlew clean assembleRelease
+```
+El APK firmado se ubicará en `app/build/outputs/apk/release/` y una copia puede encontrarse en `app/release/app-release.apk` si fue copiada manualmente.
 
-Mapeo detallado con la rúbrica DSY1105 — Frontend
-------------------------------------------------
-(Incluye una revisión de lo que el proyecto cumple respecto a la rúbrica solicitada)
+Estructura del proyecto (tabla paginada por carpetas)
+----------------------------------------------------
+A continuación se presenta una tabla resumida por carpetas con la descripción de cada archivo o subcarpeta (máx. 2 líneas por entrada). Para legibilidad se muestran bloques por carpeta; cada página/listado agrupa hasta 12 ítems.
 
-Requisitos de la rúbrica y estado actual:
-- Consumo de APIs externas: Cumple — existen adaptadores Retrofit y llamadas a endpoints (ver `data/remote/*`).
-- Conexión con microservicios Spring Boot: Parcial — el cliente está preparado; el microservicio no está incluido en este repo.
-- Pruebas unitarias (frontend): Parcial — hay tests o plantilla, pero faltan pruebas unitarias completas para ViewModels; revisar `app/src/test/`.
-- Generación de APK firmado: Parcial — el proceso está documentado en `docs/ARCHITECTURE.md`; el keystore no está incluido por seguridad.
-- Documentación técnica: Cumple — `docs/ARCHITECTURE.md`, `docs/FILES_SUMMARY.md` y diagramas en `docs/diagrams/`.
-- Integración Firebase (Auth/Firestore): Cumple — `google-services.json` presente y servicios (ej. `PedidosObserverService`) implementados.
+Raíz del proyecto
 
-Puntos a mejorar para cumplir totalmente la rúbrica (sugerencias):
-- Añadir tests unitarios para ViewModels críticos (registro, carrito, pedidos).
-- Proveer un microservicio Spring Boot de ejemplo o contratos OpenAPI para pruebas end-to-end.
-- Incluir un ejemplo de pipeline de CI que genere un APK firmado (usando secrets para keystore).
+| Ruta | Tipo | Descripción breve |
+|---|---:|---|
+| `build.gradle.kts` | archivo | Script raíz de Gradle (Kotlin DSL) que orquesta la compilación del proyecto. |
+| `settings.gradle.kts` | archivo | Define los módulos (ej. `:app`) y estructura del build. |
+| `gradle.properties` | archivo | Propiedades globales de Gradle y flags de compilación. |
+| `gradlew` / `gradlew.bat` | ejecutable | Wrappers de Gradle para ejecutar builds sin instalar Gradle globalmente. |
+| `local.properties` | archivo | Ruta local al SDK de Android (no versionar). |
+| `README_FRONTEND.md` | md | Documentación específica del frontend con arquitectura y guía rápida. |
+| `README.md` | md | Este archivo principal con resumen, pasos y enlace a docs. |
+| `docs/` | carpeta | Documentación técnica y diagramas del proyecto. |
+| `app/` | carpeta | Módulo Android con código fuente, recursos y artefactos. |
+| `.gitignore` | archivo | Ignora archivos locales, keystores y configuraciones no versionables. |
 
-Guía rápida para firmar un APK (resumen)
---------------------------------------
-1. Genera un keystore localmente y guarda sus datos en variables seguras (no subir al repo).
-2. Configura `signingConfigs` en `app/build.gradle.kts` usando propiedades en `gradle.properties` o variables de entorno.
-3. Ejecuta: `.\gradlew assembleRelease` y firma con las credenciales.
+Docs
 
-Changelog (resumen de cambios recientes)
----------------------------------------
-- 2025-11-24: Actualización de README y mover documentación extensa a `docs/`.
-- 2025-11-26: README ampliado con tabla por carpetas y mapeo con la rúbrica DSY1105.
+| Ruta | Tipo | Descripción breve |
+|---|---:|---|
+| `docs/ARCHITECTURE.md` | md | Documentación detallada de la arquitectura, componentes y guía técnica. |
+| `docs/FILES_SUMMARY.md` | md | Resumen de archivos relevantes con explicación pedagógica. |
+| `docs/diagrams/architecture.puml` | puml | Diagrama PlantUML: visión por capas y dependencias de la app. |
+| `docs/diagrams/order_flow.puml` | puml | Diagrama PlantUML: flujo de creación y observación de pedidos. |
+
+Módulo `app/` (Android)
+
+| Ruta | Tipo | Descripción breve |
+|---|---:|---|
+| `app/build.gradle.kts` | archivo | Script de build del módulo `app` (dependencias, signingConfigs). |
+| `app/google-services.json` | json | Configuración de Firebase (Auth, Firestore, Analytics) para desarrollo. |
+| `app/proguard-rules.pro` | archivo | Reglas de ofuscación para builds release. |
+| `app/src/main/AndroidManifest.xml` | archivo | Manifiesto Android: declara `MainActivity`, permisos y services. |
+| `app/release/app-release.apk` | binario | APK de release (evidencia de APK firmado). |
+| `app/release/output-metadata.json` | json | Metadata del output de release (firma y detalles). |
+
+Código fuente principal (resumen)
+
+| Ruta | Tipo | Descripción breve |
+|---|---:|---|
+| `app/src/main/java/com/milsabores/MainActivity.kt` | kotlin | Actividad principal que inicia la UI y establece `AppNavHost`. |
+| `app/src/main/java/com/milsabores/MilSaboresApplication.kt` | kotlin | Clase Application que inicializa SDKs como Firebase al arrancar. |
+| `app/src/main/java/com/milsabores/ui/` | carpeta | Pantallas Compose agrupadas por funcionalidad (login, principal, carrito). |
+| `app/src/main/java/com/milsabores/viewmodel/` | carpeta | ViewModels que gestionan la lógica y exponen estados a la UI. |
+| `app/src/main/java/com/milsabores/data/remote/` | carpeta | Clientes Retrofit y servicios para consumir APIs externas. |
+| `app/src/main/java/com/milsabores/data/local/` | carpeta | Implementación Room (DAOs, Entities) para persistencia local. |
+
+Tests y utilidades
+
+| Ruta | Tipo | Descripción breve |
+|---|---:|---|
+| `app/src/test/` | carpeta | Tests unitarios (ViewModels, utilidades). |
+| `app/src/androidTest/` | carpeta | Tests instrumentados (UI/Integration) — revisa si implementados. |
+| `core/` | carpeta | Utilidades de plataforma, logger y tipos comunes (Result). |
+| `utils/` | carpeta | Helpers para permisos, formateos y utilitarios comunes. |
+
+Diagrama de arquitectura y pantallas
+------------------------------------
+Se incluyen diagramas PlantUML en `docs/diagrams/`. Para visualizarlos, utilice una extensión PlantUML o genere PNG/SVG localmente con PlantUML:
+
+- `docs/diagrams/architecture.puml` — Diagrama de componentes y dependencias.
+- `docs/diagrams/order_flow.puml` — Flujo de pedidos y sincronización.
+
+Cumplimiento con la rúbrica DSY1105 (Parte Frontend)
+----------------------------------------------------
+A continuación se resume el grado de cumplimiento con la rúbrica solicitada (Evaluación Parcial 4):
+
+- Consumo de APIs externas: Implementado (Retrofit y DTOs en `data/remote`). Evidencia en `app/src/main/java/**/data/remote`.
+- Conexión con microservicios (Spring Boot): Preparado para consumir microservicios; el backend no está incluido en este repo (indicar endpoints en docs si se dispone). 
+- Pruebas unitarias: Estructura de tests presente en `app/src/test/`; revisar cobertura y completar tests recomendados (Login, Carrito, Pedidos).
+- Generación de APK firmado: Documentado y presente (`app/release/app-release.apk`). Reproducir firma localmente con keystore. 
+- Documentación técnica: `docs/ARCHITECTURE.md` describe arquitectura y pasos de despliegue; se han añadido diagramas PlantUML.
+
+Puntos faltantes o recomendados:
+- Añadir pruebas instrumentadas (`app/src/androidTest/`) y aumentar la cobertura de unit tests.
+- Documentar claramente los endpoints del backend (contratos request/response) si el backend existe o está en otro repo.
+- Añadir CI/CD para automatizar builds, tests y generación de APK/AAB.
+
+Archivos importantes para la entrega (resumen rápido)
+---------------------------------------------------
+- README_FRONTEND.md — base del contenido frontend.
+- docs/ARCHITECTURE.md — arquitectura extendida y guías.
+- app/release/app-release.apk — APK firmado (evidencia de entrega).
+- app/google-services.json — configuración Firebase.
 
 Cómo contribuir
 ---------------
-1. Crea una rama `feature/<nombre>` o `fix/<descripcion>`.
-2. Añade tests para cambios de lógica (ViewModels/repositorios).
-3. Formatea y ejecuta lint antes de enviar el PR:
+1. Cree una rama (`feature/<nombre>`) desde `main`.
+2. Añada tests para la lógica nueva o modificada.
+3. Abra un Pull Request describiendo los cambios y pruebas realizadas.
+4. Asegúrese de no incluir keystores ni secretos en el PR.
 
-```powershell
-.\gradlew clean assembleDebug
-.\gradlew lint
-```
+Contacto y créditos
+-------------------
+- Autores: @serarayaa y equipo Mil Sabores.
+- Licencia: MIT (especificar archivo LICENSE si corresponde).
 
-4. Envía PR con descripción y pasos para reproducir.
+Changelog breve
+---------------
+- 2025-11-30: README actualizado y tabla de archivos reordenada; enlace a `docs/ARCHITECTURE.md` añadido.
 
-Tareas pendientes recomendadas
------------------------------
-- Completar y ejecutar tests unitarios para ViewModels (registro, carrito, pedidos).
-- Añadir un microservicio de ejemplo en Spring Boot o documentación OpenAPI.
-- Agregar un `CHANGELOG.md` con estándar semántico.
 
-Contacto y ayuda
-----------------
-Si deseas que actualice `docs/FILES_SUMMARY.md` con la lista completa de archivos (descripciones de 1-2 líneas por archivo), o que genere los PNG de PlantUML y los añada al repo, dime y lo hago.
-
-Licencia
---------
-- Añadir archivo `LICENSE` con la licencia elegida (p. ej. MIT) si procede.
-
----
-
-(La descripción por archivo completa se mantiene en `docs/FILES_SUMMARY.md`. Este README sirve como resumen y guía rápida para desarrolladores y evaluadores.)

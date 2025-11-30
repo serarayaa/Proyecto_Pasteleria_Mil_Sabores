@@ -15,8 +15,9 @@ object RetrofitClient {
     //   BASE URL - AWS EC2
     // ============================
 
-    private const val AUTH_BASE_URL = "http://3.236.240.163:8081/"
-    private const val PRODUCT_BASE_URL = "http://3.236.240.163:8082/"
+    private const val AUTH_BASE_URL = "http://98.92.244.199:8081/"
+    private const val PRODUCT_BASE_URL = "http://98.92.244.199:8082/"
+
     private const val WEATHER_BASE_URL = "https://api.open-meteo.com/v1/"
 
     // ============================

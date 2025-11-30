@@ -1,175 +1,127 @@
 # Resumen completo de archivos — Pastelería Mil Sabores
 
-Última actualización: 2025-11-24
+Última actualización: 2025-11-30
 
-Este documento lista los archivos y carpetas más relevantes del proyecto con una descripción pedagógica (máx. 2 líneas cada una).
+Este documento lista los archivos y carpetas más relevantes del proyecto con una descripción pedagógica (máx. 2 líneas cada una). Está organizado por secciones para facilitar la lectura.
 
 -- Raíz del proyecto --
 
-- `build.gradle.kts` — Script Gradle raíz (Kotlin DSL) que configura buildscript, repositorios y plugins del proyecto.
-- `settings.gradle.kts` — Define los módulos del proyecto (por ejemplo `:app`) y su estructura.
-- `gradle.properties` — Propiedades y flags globales de Gradle; ajusta memoria y opciones del compilador.
-- `gradlew` / `gradlew.bat` — Wrappers de Gradle para ejecutar builds sin depender de una instalación global.
-- `local.properties` — Contiene la ruta al SDK Android local; no debe versionarse.
-- `README.md` — Documento principal con resumen, comandos y enlaces a la documentación técnica.
+| Ruta | Tipo | Descripción breve |
+|---|---:|---|
+| `build.gradle.kts` | archivo | Script Gradle raíz (Kotlin DSL) que configura plugins, repositorios y tareas globales del proyecto. |
+| `settings.gradle.kts` | archivo | Define los módulos incluidos en el build (por ejemplo `:app`). |
+| `gradle.properties` | archivo | Propiedades globales del build (versiones y flags útiles para CI). |
+| `gradlew` / `gradlew.bat` | ejecutable | Wrappers de Gradle para ejecutar builds reproducibles sin instalar Gradle global. |
+| `local.properties` | archivo | Archivo local con la ruta al SDK Android (no debe versionarse). |
+| `README.md` | md | README principal del repositorio con resumen, instrucciones y enlaces a `docs/`. |
+| `README_FRONTEND.md` | md | Documentación extensa orientada al frontend (arquitectura y guía rápida). |
+| `.gitignore` | archivo | Reglas para excluir archivos locales, keystores y otros artefactos sensibles. |
 
--- docs/ --
+-- Documentación (`docs/`) --
 
-- `docs/ARCHITECTURE.md` — Documentación extensa de arquitectura, decisiones técnicas y guías de despliegue.
-- `docs/FILES_SUMMARY.md` — (Este archivo) Listado completo de archivos y descripciones.
-- `docs/diagrams/architecture.puml` — Diagrama PlantUML que muestra las capas y relaciones principales de la app.
-- `docs/diagrams/order_flow.puml` — Diagrama PlantUML que describe el flujo de creación y observación de pedidos.
+| Ruta | Tipo | Descripción breve |
+|---|---:|---|
+| `docs/ARCHITECTURE.md` | md | Documentación técnica detallada sobre arquitectura, flujos y pasos de build/firma. |
+| `docs/FILES_SUMMARY.md` | md | Índice que detalla los archivos más relevantes (este documento). |
+| `docs/diagrams/architecture.puml` | puml | Diagrama PlantUML que representa la arquitectura por capas (usar PlantUML para renderizar). |
+| `docs/diagrams/order_flow.puml` | puml | Diagrama PlantUML que muestra el flujo de creación/observación de pedidos. |
 
--- app/ (módulo Android) --
+-- Módulo Android (`app/`) --
 
-- `app/build.gradle.kts` — Script de build específico del módulo app con dependencias (Compose, Firebase, Room, Retrofit).
-- `app/google-services.json` — Configuración de Firebase para desarrollo (Auth, Firestore, Analytics).
-- `app/proguard-rules.pro` — Reglas de ofuscación para builds de release con R8/ProGuard.
-- `app/src/main/AndroidManifest.xml` — Manifiesto Android: declara `MainActivity`, permisos, services y providers.
+| Ruta | Tipo | Descripción breve |
+|---|---:|---|
+| `app/build.gradle.kts` | archivo | Script de build del módulo `app` (dependencias, buildTypes, signingConfigs). |
+| `app/google-services.json` | json | Configuración de Firebase para el proyecto (Auth, Firestore, Analytics). |
+| `app/proguard-rules.pro` | archivo | Reglas de ofuscación y optimización para builds de release. |
+| `app/src/main/AndroidManifest.xml` | xml | Manifiesto Android: declara actividades, permisos y servicios. |
+| `app/release/app-release.apk` | binario | APK de release (evidencia de artefacto generado); mantener fuera de CI si se publica en Releases. |
+| `app/release/output-metadata.json` | json | Metadata del artefacto de release (rutas y detalles de firma). |
 
--- app/src/main/java/cl/duoc/milsabores/ (paquete principal) --
+-- Código fuente: entrada y configuración --
 
-- `MilSaboresApplication.kt` — Clase Application que inicializa servicios globales (ej. Firebase) al arrancar la app.
-- `MainActivity.kt` — Activity que hospeda la UI Compose y el NavHost de la aplicación.
+| Ruta | Tipo | Descripción breve |
+|---|---:|---|
+| `app/src/main/java/.../MilSaboresApplication.kt` | kotlin | Clase `Application` que inicializa SDKs y configuraciones globales (p.ej. Firebase). |
+| `app/src/main/java/.../MainActivity.kt` | kotlin | Actividad principal que monta el `AppNavHost` y establece el tema. |
+| `app/src/main/res/` | carpeta | Recursos de la app: drawables, strings, temas, layouts y assets. |
 
--- core/ --
+-- UI / Navegación --
 
-- `core/AppLogger.kt` — Utilidad para logging consistente y estructurado durante el desarrollo.
-- `core/Result.kt` — Clase sellada que representa estados de operación: Success, Error y Loading.
+| Ruta | Tipo | Descripción breve |
+|---|---:|---|
+| `app/src/main/java/.../ui/app/AppNavHost.kt` | kotlin | Centraliza la navegación entre pantallas usando Compose Navigation. |
+| `app/src/main/java/.../ui/*` | carpeta | Subcarpetas por pantallas (`login`, `principal`, `carrito`, `pedidos`, `profile`, etc.). |
+| `app/src/main/java/.../ui/components/` | carpeta | Componentes UI reutilizables (cards, botones, loaders, formularios). |
 
--- data/remote/ --
+-- ViewModels y dominio --
 
-- `data/remote/RetrofitClient.kt` — Configura Retrofit y OkHttp (timeout, interceptors, logging).
-- `data/remote/ProductApiService.kt` — Interfaz Retrofit con endpoints para obtener productos.
-- `data/remote/AuthApiService.kt` — (Si existe) Interfaz para endpoints de autenticación remota.
-- `data/remote/dto/ProductoDto.kt` — DTO que mapea la respuesta JSON de producto desde el backend.
-- `data/remote/dto/CrearUsuarioRequest.kt` — DTO para enviar datos al crear un usuario remoto.
-- `data/remote/dto/LoginRequest.kt` — DTO con credenciales para autenticar a usuarios.
-- `data/remote/dto/UsuarioResponseDto.kt` — DTO que representa la respuesta del backend para datos de usuario.
+| Ruta | Tipo | Descripción breve |
+|---|---:|---|
+| `app/src/main/java/.../viewmodel/` | carpeta | ViewModels que exponen estados a la UI e inyectan repositorios para la lógica. |
+| `app/src/main/java/.../domain/` | carpeta | (Opcional) Casos de uso y lógica de dominio para aislar reglas de negocio. |
 
--- data/local/ --
+-- Data / Repositorios --
 
-- `data/local/AppDatabase.kt` — Configura Room y expone DAOs para acceso a la base local.
-- `data/local/dao/CarritoDao.kt` — DAO con operaciones CRUD para el carrito en SQLite.
-- `data/local/dao/PedidoDao.kt` — DAO con operaciones CRUD y consultas para pedidos.
-- `data/local/entity/CarritoItemEntity.kt` — Entidad Room que representa un item almacenado en el carrito.
-- `data/local/entity/PedidoEntity.kt` — Entidad Room que representa un pedido persistido localmente.
-- `data/local/CarritoLocalStorage.kt` — Implementación local para gestionar el carrito (add/remove/update).
-- `data/local/PedidosLocalStorageSQLite.kt` — Implementación de persistencia de pedidos y sincronización parcial con remoto.
-- `data/local/RecordatorioEntity.kt` — Entidad que guarda recordatorios programados en la DB local.
-- `data/local/ReminderDAO.kt` — DAO para CRUD de recordatorios.
-- `data/local/ProfilePhotoManager.kt` — Gestiona guardado y recuperación de fotos de perfil en almacenamiento interno.
-- `data/local/Prefs.kt` — Abstracción sencilla para acceder a SharedPreferences y flags del usuario.
+| Ruta | Tipo | Descripción breve |
+|---|---:|---|
+| `app/src/main/java/.../data/remote/RetrofitClient.kt` | kotlin | Configura Retrofit y OkHttp (interceptores, logging, baseUrl). |
+| `app/src/main/java/.../data/remote/ProductApiService.kt` | kotlin | Interfaz Retrofit que define endpoints para productos. |
+| `app/src/main/java/.../data/remote/AuthApiService.kt` | kotlin | Interfaz Retrofit para autenticación (login/register). |
+| `app/src/main/java/.../data/remote/dto/` | carpeta | DTOs que mapean requests/responses JSON entre app y API. |
+| `app/src/main/java/.../data/local/AppDatabase.kt` | kotlin | Configura Room (entidades, DAOs) y versiones de la base de datos. |
+| `app/src/main/java/.../data/local/dao/` | carpeta | DAOs para acceder a tablas (Carrito, Pedido, Recordatorio). |
+| `app/src/main/java/.../data/local/entity/` | carpeta | Entidades Room que representan tablas de la base de datos. |
+| `app/src/main/java/.../data/local/Prefs.kt` | kotlin | Abstracción simple para almacenamiento de preferencias (DataStore/SharedPrefs). |
 
--- data/carrito/ --
+-- Repositorios e implementación --
 
-- `data/carrito/CarritoRepository.kt` — Lógica de negocio del carrito: totales, agregados y persistencia local.
-- `data/carrito/CarritoItemCard.kt` — (Componente/holder) Representa datos/UI para cada item del carrito.
+| Ruta | Tipo | Descripción breve |
+|---|---:|---|
+| `app/src/main/java/.../repository/CarritoRepository.kt` | kotlin | Lógica de alto nivel para gestionar el carrito y calcular totales. |
+| `app/src/main/java/.../repository/PedidosRepository.kt` | kotlin | Gestiona creación, consulta y actualización de pedidos (local y remoto). |
+| `app/src/main/java/.../repository/auth/` | carpeta | Implementaciones y contratos para autenticación. |
 
--- data/media/ --
+-- Modelos / Mappers --
 
-- `data/media/MediaRepository.kt` — Provee URIs y helpers para captura y manejo de imágenes con FileProvider.
+| Ruta | Tipo | Descripción breve |
+|---|---:|---|
+| `app/src/main/java/.../model/Producto.kt` | kotlin | Data class que modela un producto (id, nombre, precio, imagen). |
+| `app/src/main/java/.../model/Pedido.kt` | kotlin | Data class que representa un pedido completo con items y totales. |
+| `app/src/main/java/.../model/CarritoItem.kt` | kotlin | Data class para un item del carrito con cantidad y subtotal. |
+| `app/src/main/java/.../model/Recordatorio.kt` | kotlin | Modelo para recordatorios (fecha, mensaje, estado). |
+| `app/src/main/java/.../model/user.kt` | kotlin | Modelo de usuario con campos públicos relevantes. |
+| `app/src/main/java/.../model/mappers/` | carpeta | Funciones que convierten DTOs a modelos de dominio/ UI. |
 
--- repository/ --
+-- Servicios y notificaciones --
 
-- `repository/CarritoRepository.kt` — Repositorio de alto nivel que combina fuentes locales y lógicas para la UI.
-- `repository/PedidosRepository.kt` — Gestiona creación, consulta y actualización de pedidos (sincroniza local y remoto).
-- `repository/auth/RecordatorioRepository.kt` — Repositorio para manejar recordatorios y su persistencia.
+| Ruta | Tipo | Descripción breve |
+|---|---:|---|
+| `app/src/main/java/.../service/PedidosObserverService.kt` | kotlin | Servicio que escucha Firestore y sincroniza pedidos con la DB local. |
+| `app/src/main/java/.../notifications/NotificationHelper.kt` | kotlin | Crea canales y encapsula la lógica para enviar notificaciones locales. |
 
--- model/ --
+-- Tests y QA --
 
-- `model/Producto.kt` — Data class que modela un producto (id, nombre, precio, imagen, categoría).
-- `model/Pedido.kt` — Data class que describe la estructura completa de un pedido y sus metadatos.
-- `model/CarritoItem.kt` — Data class para items del carrito con cálculo de subtotal.
-- `model/Recordatorio.kt` — Modelo para los recordatorios programados por el usuario.
-- `model/user.kt` — Modelo de usuario con uid, email y displayName.
-- `model/mappers/ProductoMapper.kt` — Funciones para convertir DTOs a modelos de dominio.
-- `model/mappers/RecordatorioMappers.kt` — Mapea entidades de DB a modelos usados en la UI.
+| Ruta | Tipo | Descripción breve |
+|---|---:|---|
+| `app/src/test/` | carpeta | Pruebas unitarias para ViewModels, repositorios y utilidades. |
+| `app/src/androidTest/` | carpeta | Pruebas instrumentadas para UI/Integration con Espresso/Compose Test (revisar si implementadas). |
+| `app/build/reports/tests/` | carpeta | Reportes generados tras ejecutar los tests unitarios y instrumentados. |
 
--- ui/app/ --
+-- Utilidades y core --
 
-- `ui/app/Routes.kt` — Definición central de rutas/nombres para la navegación entre pantallas.
-- `ui/app/AppNavHost.kt` — NavHost principal que orquesta la navegación Compose entre destinos.
+| Ruta | Tipo | Descripción breve |
+|---|---:|---|
+| `core/AppLogger.kt` | kotlin | Utilidad global para logging estructurado durante desarrollo. |
+| `core/Result.kt` | kotlin | Clase sellada para manejar estados: Success, Error y Loading. |
+| `utils/PermissionHelper.kt` | kotlin | Helpers para solicitar permisos y manejar flujos de autorización. |
+| `data/media/MediaRepository.kt` | kotlin | Manejo de archivos multimedia y URIs (captura/almacenamiento de imágenes). |
 
--- ui/home/ --
+-- Archivos y notas adicionales --
 
-- `ui/home/HomeScreen.kt` — Pantalla de bienvenida con opciones de acceso (login/registro/invitado).
-- `ui/home/components/AnimatedLogo.kt` — Componente animado reutilizable para el logo en la pantalla de inicio.
-
--- ui/login/ --
-
-- `ui/login/LoginScreen.kt` — Pantalla de login con formulario y validaciones visuales.
-- `ui/login/LoginViewModel.kt` — Lógica de autenticación y manejo del estado del login.
-
--- ui/register/ --
-
-- `ui/register/RegistrarseScreen.kt` — Pantalla para registrar nuevos usuarios con validaciones.
-- `ui/register/RegistrarseViewModel.kt` — Lógica de registro y llamada a repositorios de auth.
-
--- ui/recover/ --
-
-- `ui/recover/RecuperarPasswordScreen.kt` — UI para solicitar recuperación de contraseña por email.
-- `ui/recover/RecuperarPasswordViewModel.kt` — Gestiona la lógica para enviar la solicitud a Firebase o backend.
-
--- ui/principal/ --
-
-- `ui/principal/PrincipalScreen.kt` — Pantalla principal con grid/lista de productos y navegación inferior.
-- `ui/principal/PrincipalViewModel.kt` — Orquestador que carga productos, aplica filtros y administra el carrito.
-- `ui/principal/components/UiProductsCard.kt` — Componente que muestra la tarjeta de cada producto.
-
--- ui/components/ --
-
-- `ui/components/SkeletonLoader.kt` — Skeletons (placeholders) con efecto shimmer durante la carga.
-- `ui/components/AnimatedComponents.kt` — Componentes visuales con animaciones reutilizables.
-- `ui/components/GradientComponents.kt` — Helpers para aplicar gradientes en tarjetas y botones.
-- `ui/components/ResponsiveComponents.kt` — Componentes adaptativos para distintos tamaños de pantalla.
-- `ui/components/GradientComponents.kt` — (repetido) Helpers de gradiente y estilos.
-
--- ui/carrito/ --
-
-- `ui/carrito/CarritoScreen.kt` — Pantalla que muestra items del carrito, totales y acciones para finalizar compra.
-- `ui/carrito/CarritoViewModel.kt` — Handle del estado del carrito y acciones (incrementar, eliminar, finalizar).
-
--- ui/pedidos/ --
-
-- `ui/pedidos/PedidosScreen.kt` — Lista de pedidos con filtros y estados visuales.
-- `ui/pedidos/DetallePedidoScreen.kt` — Detalle de un pedido con timeline de estados y acciones.
-- `ui/pedidos/PedidosViewModel.kt` — Lógica para cargar y sincronizar pedidos con la fuente remota.
-- `ui/mapper/EstadoPedidoUi.kt` — Mapea estados de pedido a colores y etiquetas de UI.
-
--- ui/profile/ --
-
-- `ui/profile/ProfileScreen.kt` — Muestra y permite editar datos del perfil y foto del usuario.
-- `ui/profile/ProfileViewModel.kt` — Lógica para subir, refrescar o eliminar la foto de perfil.
-
--- ui/settings/ --
-
-- `ui/settings/SettingsScreen.kt` — Pantalla de configuración con flags (modo oscuro, ayuda y versiones).
-
--- ui/recordatorio/ --
-
-- `ui/recordatorio/RecordatorioScreen.kt` — UI para crear y listar recordatorios programados en la app.
-- `ui/recordatorio/RecordatorioViewModel.kt` — Lógica para crear, observar y eliminar recordatorios.
-
--- ui/utils y vmfactory --
-
-- `ui/utils/Formatters.kt` — Funciones que formatean números y cadenas (p.ej. moneda CLP).
-- `ui/utils/ResponsiveUtils.kt` — Helpers para calcular tamaños y márgenes responsivos.
-- `ui/vmfactory/ProfileVMFactory.kt` — Factory para crear `ProfileViewModel` con dependencias.
-- `ui/vmfactory/RecordatorioVMFactory.kt` — Factory para crear `RecordatorioViewModel` con dependencias.
-
--- notifications & service --
-
-- `notifications/NotificationHelper.kt` — Crea canales y envía notificaciones locales al usuario.
-- `service/PedidosObserverService.kt` — Servicio que escucha Firestore y genera notificaciones de cambios.
-
--- utils --
-
-- `utils/PermissionHelper.kt` — Helpers para solicitar y verificar permisos runtime (cámara, almacenamiento).
-- `utils/CLP.kt` — Extensión para formatear números a CLP (moneda chilena).
+| Ruta | Tipo | Descripción breve |
+|---|---:|---|
+| `proguard-rules.pro` | archivo | Reglas de ofuscación aplicadas en builds de release. |
+| `docs/FILES_SUMMARY.md` | md | Este índice de archivos; mantener actualizado con cambios de estructura. |
 
 
----
-
-> Nota: este archivo resume los elementos más relevantes detectados en el repositorio. Si quieres que transforme esto en una tabla paginada en el README o que incluya archivos adicionales del build/intermediates, dímelo y lo agrego.
-
+Si necesitas, puedo generar una versión ampliada que incluya cada archivo Kotlin individual con 1–2 líneas de descripción (mapear `app/src/main/java/...` por paquete). ¿Deseas que lo haga ahora?
