@@ -25,6 +25,10 @@ class LoginViewModelTest {
         Dispatchers.resetMain()
     }
 
+    // ===============================
+    // TESTS ORIGINALES (SIN CAMBIOS)
+    // ===============================
+
     @Test
     fun `email invalido marca error`() {
         val vm = LoginViewModel()
@@ -62,5 +66,39 @@ class LoginViewModelTest {
 
         assertNull(state.emailError)
         assertNull(state.passwordError)
+    }
+
+    // ===============================
+    // TESTS NUEVOS (SIN BACKEND)
+    // ===============================
+
+    @Test
+    fun `guestLogin crea sesion de invitado`() {
+        val vm = LoginViewModel()
+
+        vm.guestLogin()
+        val state = vm.ui.value
+
+        assertTrue(state.loggedIn)
+        assertTrue(state.isGuest)
+        assertNotNull(state.backendUser)
+        assertEquals("GUEST", state.backendUser?.rut)
+        assertEquals("invitado@milsabores.cl", state.backendUser?.email)
+        assertEquals("Sesión de invitado", state.message)
+    }
+
+    @Test
+    fun `messageConsumed limpia mensaje y error`() {
+        val vm = LoginViewModel()
+
+        // Dejamos un mensaje presente usando guestLogin
+        vm.guestLogin()
+        assertNotNull(vm.ui.value.message)
+
+        vm.messageConsumed()
+        val state = vm.ui.value
+
+        assertNull(state.message)
+        assertNull(state.error)
     }
 }

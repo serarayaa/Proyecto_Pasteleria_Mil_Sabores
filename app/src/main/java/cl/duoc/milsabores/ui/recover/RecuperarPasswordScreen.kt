@@ -29,9 +29,11 @@ fun RecuperarPasswordScreen(
 ) {
     val ui by vm.ui.collectAsState()
 
-    // ✅ Ejecuta efectos fuera de la composición
+    // ✅ Si quieres que, al completarse, navegue de vuelta o muestre un diálogo
     LaunchedEffect(ui.sent) {
-        if (ui.sent) onSent()
+        if (ui.sent) {
+            onSent()
+        }
     }
 
     Box(
@@ -58,21 +60,34 @@ fun RecuperarPasswordScreen(
 
             Spacer(Modifier.height(20.dp))
 
+            // Error de validación o de red
             ui.error?.let {
                 Text(it, color = MaterialTheme.colorScheme.error)
+                Spacer(Modifier.height(8.dp))
+            }
+
+            // Mensaje de éxito visible en la propia pantalla
+            ui.successMessage?.let {
+                Text(it, color = MaterialTheme.colorScheme.primary)
                 Spacer(Modifier.height(8.dp))
             }
 
             if (ui.loading) {
                 CircularProgressIndicator()
             } else {
-                Button(onClick = vm::submit, enabled = ui.email.isNotBlank()) {
-                    Text("Enviar enlace de recuperación")
+                Button(
+                    onClick = vm::submit,
+                    enabled = ui.email.isNotBlank()
+                ) {
+                    Text("Enviar instrucciones")
                 }
             }
 
             Spacer(Modifier.height(12.dp))
-            TextButton(onClick = onBack) { Text("Volver") }
+
+            TextButton(onClick = onBack) {
+                Text("Volver")
+            }
         }
     }
 }
