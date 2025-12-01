@@ -1,11 +1,15 @@
 package cl.duoc.milsabores.ui.profile
 
 import android.content.Context
+import android.graphics.BitmapFactory
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import cl.duoc.milsabores.core.ImagenUtils
 import cl.duoc.milsabores.data.local.ProfilePhotoManager
 import cl.duoc.milsabores.data.media.MediaRepository
+import cl.duoc.milsabores.data.repository.AuthRepository
+import cl.duoc.milsabores.core.AppLogger
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -23,12 +27,13 @@ data class ProfileUiState(
 
 /**
  * Versión sin Firebase.
- * Por ahora usamos un usuario "local" con datos de ejemplo.
- * Más adelante, si quieres, podemos leer estos datos desde Prefs o desde el backend.
+ * Usa un usuario "local" por defecto. Si luego quieres,
+ * podemos agregar un método para setear estos datos desde el login.
  */
 class ProfileViewModel(
     private val mediaRepo: MediaRepository = MediaRepository(),
-    private val photoManager: ProfilePhotoManager? = null
+    private val photoManager: ProfilePhotoManager? = null,
+    private val authRepository: AuthRepository = AuthRepository()
 ) : ViewModel() {
 
     private val _ui = MutableStateFlow(
@@ -40,6 +45,17 @@ class ProfileViewModel(
     )
     val ui: StateFlow<ProfileUiState> = _ui
 
+    /** Permite actualizar datos de usuario (ej. después del login). */
+    fun setUserData(uid: String?, email: String?, displayName: String?) {
+        _ui.update {
+            it.copy(
+                uid = uid ?: it.uid,
+                email = email ?: it.email,
+                displayName = displayName ?: it.displayName
+            )
+        }
+    }
+
     /** Recarga la foto guardada localmente (usa fallback si no hay inyección). */
     fun refreshProfilePhoto(context: Context) {
         val userId = _ui.value.uid ?: return
@@ -49,26 +65,60 @@ class ProfileViewModel(
                 val photoUri = mgr.getProfilePhotoUri(userId)
                 _ui.update { it.copy(profilePhotoUri = photoUri) }
             } catch (e: Exception) {
+                AppLogger.e("Error al cargar foto de perfil", e, "ProfileVM")
                 _ui.update { it.copy(error = "Error al cargar foto: ${e.message}") }
             }
         }
     }
 
-    /** Guarda una nueva foto de perfil localmente y actualiza estado. */
+    /** Guarda una nueva foto de perfil localmente y la envía al backend en Base64. */
     fun saveProfilePhoto(context: Context, photoUri: Uri) {
-        val userId = _ui.value.uid ?: return
+        val userId = _ui.value.uid ?: return   // aquí asumimos que uid = RUT
         viewModelScope.launch(Dispatchers.IO) {
             try {
                 _ui.update { it.copy(isLoading = true, error = null) }
+
                 val mgr = photoManager ?: ProfilePhotoManager(context)
                 val success = mgr.saveProfilePhoto(userId, photoUri)
-                if (success) {
-                    val savedUri = mgr.getProfilePhotoUri(userId)
-                    _ui.update { it.copy(profilePhotoUri = savedUri, isLoading = false) }
-                } else {
-                    _ui.update { it.copy(error = "No se pudo guardar la foto", isLoading = false) }
+
+                if (!success) {
+                    _ui.update {
+                        it.copy(
+                            isLoading = false,
+                            error = "No se pudo guardar la foto"
+                        )
+                    }
+                    return@launch
                 }
+
+                // 1) Actualizar la URI local en la UI
+                val savedUri = mgr.getProfilePhotoUri(userId)
+
+                // 2) Leer la imagen desde el Uri y convertirla a Base64
+                try {
+                    val inputStream = context.contentResolver.openInputStream(photoUri)
+                    val bitmap = inputStream?.use { BitmapFactory.decodeStream(it) }
+
+                    if (bitmap != null) {
+                        val base64 = ImagenUtils.bitmapToBase64(bitmap)
+                        // 3) Enviar al backend (si falla, solo dejamos log, no rompemos la UI)
+                        try {
+                            authRepository.actualizarFotoPerfil(userId, base64)
+                            AppLogger.i("Foto de perfil enviada al backend para $userId", "ProfileVM")
+                        } catch (e: Exception) {
+                            AppLogger.e("Error al enviar foto al backend", e, "ProfileVM")
+                        }
+                    } else {
+                        AppLogger.e("Bitmap nulo al leer Uri de la foto", null, "ProfileVM")
+                    }
+                } catch (e: Exception) {
+                    AppLogger.e("Error al procesar bitmap para Base64", e, "ProfileVM")
+                }
+
+                _ui.update { it.copy(profilePhotoUri = savedUri, isLoading = false) }
+
             } catch (e: Exception) {
+                AppLogger.e("Error general en saveProfilePhoto", e, "ProfileVM")
                 _ui.update { it.copy(error = "Error: ${e.message}", isLoading = false) }
             }
         }
@@ -83,6 +133,7 @@ class ProfileViewModel(
                 mgr.deleteProfilePhoto(userId)
                 _ui.update { it.copy(profilePhotoUri = null) }
             } catch (e: Exception) {
+                AppLogger.e("Error al eliminar foto de perfil", e, "ProfileVM")
                 _ui.update { it.copy(error = "Error al eliminar: ${e.message}") }
             }
         }
